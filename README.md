@@ -1,6 +1,3 @@
-# jornaleiro-calendar
-Simulação-ação de graças pela fidelidade de D'us no cumprimento exato de Suas promessas.
-
 # 📆 Calendário do Jornaleiro – Isaías 21:16-17
 
 ## Propósito
