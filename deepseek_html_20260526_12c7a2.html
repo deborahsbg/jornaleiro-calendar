@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Calendário do Jornaleiro | Isaías 21:16-17</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📆 Calendário do Jornaleiro</h1>
+            <p class="versiculo">"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <span class="stat-label">Início</span>
+                <span class="stat-value">16/05/2026 · 22h</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Total de dias</span>
+                <span class="stat-value" id="totalDias">384</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Já contados</span>
+                <span class="stat-value" id="contados">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Faltam</span>
+                <span class="stat-value" id="faltam">384</span>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="controls">
+            <button id="resetBtn" class="btn btn-secondary">🔄 Reiniciar contagem</button>
+            <button id="exportBtn" class="btn btn-secondary">📋 Exportar progresso</button>
+        </div>
+
+        <div class="legenda">
+            <span>✅ Marcado | ⬜ Pendente | 🕯️ Festa | ⭐ Sábado</span>
+        </div>
+
+        <div id="calendar" class="calendar"></div>
+
+        <footer>
+            <p>🙏 Simulação-ação de graças pela fidelidade de D'us.<br>
+            Reunimo-nos às terças-feiras para lembrar que Ele cumpre no tempo exato.</p>
+            <p class="footnote">Base: Calendário Hebraico · 384 dias (ano embolísmico) · Término previsto: ~03/06/2027</p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
