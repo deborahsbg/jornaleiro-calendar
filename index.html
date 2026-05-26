@@ -3,56 +3,333 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Calendário do Jornaleiro | Isaías 21:16-17</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Calendário do Jornaleiro | Isaías 21</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f3ef;
+            color: #1e2a2e;
+            padding: 20px;
+            line-height: 1.4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            color: #b45309;
+            margin-bottom: 8px;
+        }
+        .versiculo {
+            font-style: italic;
+            color: #6c6f6b;
+            font-size: 0.9rem;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            padding: 12px 8px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e7e5e4;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #b45309;
+        }
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #2c3e2f;
+        }
+        .progress-bar {
+            background: #e7e5e4;
+            border-radius: 30px;
+            height: 20px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .progress-fill {
+            background: #b45309;
+            width: 0%;
+            height: 100%;
+            transition: width 0.2s;
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            background: #e7e5e4;
+            color: #1e2a2e;
+            transition: 0.2s;
+        }
+        .btn-primary {
+            background: #b45309;
+            color: white;
+        }
+        .btn-primary:hover { background: #9a3e06; }
+        .btn-secondary:hover { background: #d6d3d1; }
+        .legenda {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #6c6f6b;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .legenda span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .calendar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .month-card {
+            background: white;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 1px solid #e7e5e4;
+        }
+        .month-header {
+            background: #2c3e2f;
+            color: #fef3c7;
+            padding: 12px 16px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .month-days {
+            padding: 12px;
+            display: none;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+        .month-card.open .month-days {
+            display: grid;
+        }
+        .day-cell {
+            background: #fef9f0;
+            border-radius: 16px;
+            padding: 8px 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            font-size: 0.75rem;
+            border: 1px solid #f0e7db;
+        }
+        .day-cell.marked {
+            background: #b45309;
+            color: white;
+            border-color: #b45309;
+        }
+        .day-cell.tuesday {
+            border: 2px solid #fbbf24;
+            background: #fffbeb;
+        }
+        .day-cell.tuesday.marked {
+            background: #b45309;
+            border: 2px solid #ffd966;
+        }
+        .day-cell.festa {
+            background: #d97706;
+            color: white;
+        }
+        .day-cell.shabbat {
+            background: #4b5563;
+            color: white;
+        }
+        .day-cell.festa.marked, .day-cell.shabbat.marked {
+            background: #b45309;
+            outline: 2px solid #fbbf24;
+        }
+        .day-number {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        .day-event {
+            font-size: 0.6rem;
+            display: block;
+            white-space: normal;
+            line-height: 1.2;
+        }
+        footer {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 0.7rem;
+            color: #6c6f6b;
+            border-top: 1px solid #e7e5e4;
+            padding-top: 20px;
+        }
+        @media (max-width: 650px) {
+            .stats { gap: 6px; }
+            .stat-value { font-size: 1.2rem; }
+            .day-number { font-size: 0.85rem; }
+            .day-event { font-size: 0.55rem; }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📆 Calendário do Jornaleiro</h1>
-            <p class="versiculo">"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</p>
-        </header>
+<div class="container">
+    <header>
+        <h1>📆 Calendário do Jornaleiro</h1>
+        <div class="versiculo">“Dentro de um ano, conforme os anos de um jornaleiro…”<br>Isaías 21:16-17</div>
+    </header>
 
-        <div class="stats">
-            <div class="stat-card">
-                <span class="stat-label">Início</span>
-                <span class="stat-value">16/05/2026 · 22h</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label">Total de dias</span>
-                <span class="stat-value" id="totalDias">384</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label">Já contados</span>
-                <span class="stat-value" id="contados">0</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label">Faltam</span>
-                <span class="stat-value" id="faltam">384</span>
-            </div>
-        </div>
-
-        <div class="progress-bar">
-            <div class="progress-fill" id="progressFill"></div>
-        </div>
-
-        <div class="controls">
-            <button id="resetBtn" class="btn btn-secondary">🔄 Reiniciar contagem</button>
-            <button id="exportBtn" class="btn btn-secondary">📋 Exportar progresso</button>
-        </div>
-
-        <div class="legenda">
-            <span>✅ Marcado | ⬜ Pendente | 🕯️ Festa | ⭐ Sábado</span>
-        </div>
-
-        <div id="calendar" class="calendar"></div>
-
-        <footer>
-            <p>🙏 Simulação-ação de graças pela fidelidade de D'us.<br>
-            Reunimo-nos às terças-feiras para lembrar que Ele cumpre no tempo exato.</p>
-            <p class="footnote">Base: Calendário Hebraico · 384 dias (ano embolísmico) · Término previsto: ~03/06/2027</p>
-        </footer>
+    <div class="stats">
+        <div class="stat-card"><div class="stat-label">Início</div><div class="stat-value">16/05/2026 · 22h</div></div>
+        <div class="stat-card"><div class="stat-label">Total de dias</div><div class="stat-value" id="totalDias">384</div></div>
+        <div class="stat-card"><div class="stat-label">Já contados</div><div class="stat-value" id="contados">0</div></div>
+        <div class="stat-card"><div class="stat-label">Faltam</div><div class="stat-value" id="faltam">384</div></div>
     </div>
-    <script src="script.js"></script>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+    <div class="controls">
+        <button id="resetBtn" class="btn btn-secondary">🔄 Reiniciar contagem</button>
+        <button id="exportBtn" class="btn btn-secondary">📋 Exportar progresso</button>
+    </div>
+
+    <div class="legenda">
+        <span>✅ Marcado</span> <span>⬜ Pendente</span> <span>🕯️ Festa (início/fim)</span> <span>⭐ Sábado</span> <span>☑️ Terça (ticar)</span>
+    </div>
+
+    <div id="calendar" class="calendar"></div>
+    <footer>
+        <p>🙏 Simulação-ação de graças pela fidelidade de D'us.<br>Reunimo-nos às terças-feiras — clique no dia para ticar.</p>
+        <p>Base: Calendário Hebraico · 384 dias · Término previsto: ~03/06/2027</p>
+    </footer>
+</div>
+
+<script>
+const totalDias = 384;
+let diasMarcados = new Set();
+
+// ========== EVENTOS OTIMIZADOS (início/fim para festas longas) ==========
+const meses = [
+    { nome: "MAIO 2026", dias: 31, inicioSemana: 5, eventos: { 
+        19: "☑️ Terça", 21: "🕯️ Início Shavuot", 23: "🕯️ Fim Shavuot ⭐", 26: "☑️ Terça" } },
+    { nome: "JUNHO 2026", dias: 30, inicioSemana: 1, eventos: { 
+        2: "☑️ Terça", 9: "☑️ Terça", 16: "☑️ Terça", 23: "☑️ Terça", 30: "☑️ Terça" } },
+    { nome: "JULHO 2026", dias: 31, inicioSemana: 3, eventos: { 
+        4: "⭐", 7: "☑️ Terça", 11: "⭐", 14: "☑️ Terça", 18: "⭐", 21: "☑️ Terça", 
+        22: "🕯️ Tisha B'Av", 23: "🕯️ Tisha B'Av", 25: "⭐", 28: "☑️ Terça" } },
+    { nome: "AGOSTO 2026", dias: 31, inicioSemana: 6, eventos: { 
+        1: "⭐", 4: "☑️ Terça", 8: "⭐", 11: "☑️ Terça", 15: "⭐", 18: "☑️ Terça", 22: "⭐", 25: "☑️ Terça", 29: "⭐" } },
+    { nome: "SETEMBRO 2026", dias: 30, inicioSemana: 2, eventos: { 
+        1: "☑️ Terça", 5: "⭐", 8: "☑️ Terça", 11: "🕯️ Início Rosh Hashaná", 13: "🕯️ Fim Rosh Hashaná", 
+        15: "☑️ Terça", 19: "⭐", 20: "🕯️ Yom Kippur", 21: "🕯️ Yom Kippur", 22: "☑️ Terça", 
+        25: "🕯️ Início Sucot ⭐", 30: "🕯️ Fim Sucot", 29: "☑️ Terça" } },
+    { nome: "OUTUBRO 2026", dias: 31, inicioSemana: 4, eventos: { 
+        1: "🕯️ Sucot", 2: "🕯️ Shemini Atzeret ⭐", 3: "🕯️ Simchat Torá", 4: "⭐", 6: "☑️ Terça", 10: "⭐", 
+        13: "☑️ Terça", 17: "⭐", 20: "☑️ Terça", 24: "⭐", 27: "☑️ Terça", 31: "⭐" } },
+    { nome: "NOVEMBRO 2026", dias: 30, inicioSemana: 0, eventos: { 
+        3: "☑️ Terça", 7: "⭐", 10: "☑️ Terça", 14: "⭐", 17: "☑️ Terça", 21: "⭐", 24: "☑️ Terça", 28: "⭐" } },
+    { nome: "DEZEMBRO 2026", dias: 31, inicioSemana: 2, eventos: { 
+        1: "☑️ Terça", 4: "🕯️ Início Chanucá ⭐", 12: "🕯️ Fim Chanucá ⭐", 8: "☑️ Terça", 
+        15: "☑️ Terça", 19: "⭐", 22: "☑️ Terça", 26: "⭐", 29: "☑️ Terça" } },
+    { nome: "JANEIRO 2027", dias: 31, inicioSemana: 5, eventos: { 
+        2: "⭐", 5: "☑️ Terça", 9: "⭐", 12: "☑️ Terça", 16: "⭐", 19: "☑️ Terça", 
+        22: "🕯️ Tu BiShvat", 23: "🕯️ Tu BiShvat ⭐", 26: "☑️ Terça", 30: "⭐" } },
+    { nome: "FEVEREIRO 2027", dias: 28, inicioSemana: 1, eventos: { 
+        2: "☑️ Terça", 6: "⭐", 9: "☑️ Terça", 13: "⭐", 16: "☑️ Terça", 20: "⭐", 23: "☑️ Terça", 27: "⭐" } },
+    { nome: "MARÇO 2027", dias: 31, inicioSemana: 1, eventos: { 
+        2: "☑️ Terça", 6: "⭐", 9: "☑️ Terça", 13: "⭐", 16: "☑️ Terça", 20: "⭐", 
+        22: "🕯️ Início Purim", 23: "🕯️ Fim Purim + ☑️ Terça", 27: "⭐", 30: "☑️ Terça" } },
+    { nome: "ABRIL 2027", dias: 30, inicioSemana: 4, eventos: { 
+        3: "⭐", 6: "☑️ Terça", 10: "⭐", 13: "☑️ Terça", 17: "⭐", 20: "☑️ Terça", 
+        21: "🕯️ Início Pêssach", 28: "🕯️ Fim Pêssach + ☑️ Terça" } },
+    { nome: "MAIO 2027", dias: 31, inicioSemana: 6, eventos: { 
+        1: "⭐", 4: "☑️ Terça", 8: "⭐", 11: "☑️ Terça", 15: "⭐", 18: "☑️ Terça", 22: "⭐", 
+        24: "🕯️ Início Lag BaOmer", 25: "🕯️ Fim Lag BaOmer + ☑️ Terça", 29: "⭐" } },
+    { nome: "JUNHO 2027", dias: 10, inicioSemana: 2, eventos: { 
+        1: "☑️ Terça", 5: "⭐", 8: "☑️ Terça", 10: "🕯️ Shavuot", 11: "⭐" } }
+];
+
+// Carregar salvos e marcar 19 e 26/05 como padrão
+function loadProgresso() {
+    const saved = localStorage.getItem('jornaleiro_marcados');
+    if (saved) diasMarcados = new Set(JSON.parse(saved));
+    else { diasMarcados.add("2026-05-19"); diasMarcados.add("2026-05-26"); }
+    updateStats();
+}
+function saveProgresso() { localStorage.setItem('jornaleiro_marcados', JSON.stringify([...diasMarcados])); updateStats(); }
+function updateStats() {
+    const c = diasMarcados.size;
+    document.getElementById('contados').textContent = c;
+    document.getElementById('faltam').textContent = totalDias - c;
+    document.getElementById('progressFill').style.width = (c/totalDias*100)+'%';
+}
+function toggleDia(dateStr, cell) {
+    if (diasMarcados.has(dateStr)) { diasMarcados.delete(dateStr); cell.classList.remove('marked'); }
+    else { diasMarcados.add(dateStr); cell.classList.add('marked'); }
+    saveProgresso();
+}
+function gerarCalendario() {
+    const container = document.getElementById('calendar');
+    container.innerHTML = '';
+    for (let mi=0; mi<meses.length; mi++) {
+        const m = meses[mi];
+        const card = document.createElement('div'); card.className = 'month-card';
+        const header = document.createElement('div'); header.className = 'month-header';
+        header.innerHTML = `📅 ${m.nome} <span style="float:right;">▼</span>`;
+        header.onclick = () => card.classList.toggle('open');
+        const grid = document.createElement('div'); grid.className = 'month-days';
+        ['D','S','T','Q','Q','S','S'].forEach(d => { let dDiv = document.createElement('div'); dDiv.textContent = d; dDiv.style.fontWeight='bold'; dDiv.style.color='#b45309'; grid.appendChild(dDiv); });
+        for (let i=0; i<m.inicioSemana; i++) { let e = document.createElement('div'); grid.appendChild(e); }
+        for (let d=1; d<=m.dias; d++) {
+            let dateStr = `2026-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            if (mi>=12) dateStr = `2027-${String(mi-11).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const ev = m.eventos[d] || '';
+            const isMarked = diasMarcados.has(dateStr);
+            const dayDiv = document.createElement('div'); dayDiv.className = 'day-cell';
+            if (isMarked) dayDiv.classList.add('marked');
+            if (ev.includes('☑️') || ev.includes('Terça')) dayDiv.classList.add('tuesday');
+            if (ev.includes('🕯️')) dayDiv.classList.add('festa');
+            if (ev.includes('⭐')) dayDiv.classList.add('shabbat');
+            const numSpan = document.createElement('span'); numSpan.className = 'day-number'; numSpan.textContent = d;
+            dayDiv.appendChild(numSpan);
+            if (ev) { let evSpan = document.createElement('span'); evSpan.className = 'day-event'; evSpan.textContent = ev.replace('⭐','').trim(); dayDiv.appendChild(evSpan); }
+            dayDiv.onclick = (function(ds, el) { return () => toggleDia(ds, el); })(dateStr, dayDiv);
+            grid.appendChild(dayDiv);
+        }
+        card.appendChild(header); card.appendChild(grid); container.appendChild(card);
+    }
+}
+document.getElementById('resetBtn').onclick = () => { if(confirm('Resetar tudo?')){ diasMarcados.clear(); diasMarcados.add("2026-05-19"); diasMarcados.add("2026-05-26"); saveProgresso(); gerarCalendario(); } };
+document.getElementById('exportBtn').onclick = () => { let t = [...diasMarcados].sort().join('\n'); navigator.clipboard.writeText(t); alert('Lista copiada!'); };
+loadProgresso(); gerarCalendario();
+</script>
 </body>
 </html>
