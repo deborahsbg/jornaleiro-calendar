@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Calendário do Jornaleiro | Isaías 21</title>
-    <!-- Firebase SDKs -->
     <script type="module">
-        // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, arrayUnion, arrayRemove, query, orderBy, addDoc, onSnapshot, where } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, arrayUnion, arrayRemove, query, orderBy, addDoc, onSnapshot, where, increment, runTransaction } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
-        // ========== SUA CONFIGURAÇÃO DO FIREBASE ==========
+        // Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyADaKwc0YIOKWeP01mgmjkhufqbdeqK3ok",
             authDomain: "calendario-jornaleiro.firebaseapp.com",
@@ -21,63 +19,50 @@
             appId: "1:583164454011:web:4e4073c9d50847fcc32ede"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // Estado do usuário
         let usuarioAtual = null;
         let usuarioNickname = null;
 
-        // Elementos DOM
+        // Elementos
         const splashScreen = document.getElementById('splashScreen');
         const appScreen = document.getElementById('appScreen');
         const userNicknameSpan = document.getElementById('userNickname');
         const userEmailSpan = document.getElementById('userEmail');
-        const listaPresencaDiv = document.getElementById('listaPresenca');
-        const muralDiv = document.getElementById('mural');
         const calendarDiv = document.getElementById('calendar');
+        const contadorHojeSpan = document.getElementById('contadorHoje');
+        const totalParticipantesSpan = document.getElementById('totalParticipantes');
+        const barraFill = document.getElementById('barraFill');
 
-        // ========== FUNÇÃO DE LOGIN COM GOOGLE ==========
+        // ========== LOGIN ==========
         window.loginComGoogle = async () => {
             try {
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
-                
-                // Verificar se o usuário já tem um nickname
                 const userDocRef = doc(db, 'usuarios', user.uid);
                 const docSnap = await getDoc(userDocRef);
                 
                 if (!docSnap.exists()) {
-                    // Primeira vez - pedir nickname
                     let nickname = prompt(
-                        '✨ Bem-vindo ao propósito do Calendário do Jornaleiro!\n\n' +
-                        'Escolha um NICKNAME (apelido) que aparecerá publicamente.\n\n' +
-                        'Exemplos: LeãoDeJudá, ServaSilenciosa, Vigia, Peregrino\n\n' +
-                        'Ninguém saberá seu nome real.'
+                        '✨ Bem-vindo!\n\nEscolha um NICKNAME público:\nEx: LeãoDeJudá, Serva, Vigia'
                     );
-                    
                     while (!nickname || nickname.trim() === '') {
-                        nickname = prompt('Nickname não pode ficar vazio. Escolha um apelido:');
+                        nickname = prompt('Nickname não pode ficar vazio:');
                     }
-                    
-                    // Salvar no Firestore
                     await setDoc(userDocRef, {
                         email: user.email,
                         nickname: nickname,
                         createdAt: new Date().toISOString()
                     });
-                    
-                    alert(`✅ Conta criada! Seu nickname público é: ${nickname}`);
+                    alert(`✅ Bem-vindo, ${nickname}!`);
                 } else {
-                    const userData = docSnap.data();
-                    alert(`✅ Bem-vindo de volta, ${userData.nickname}!`);
+                    alert(`✅ Bem-vindo de volta, ${docSnap.data().nickname}!`);
                 }
             } catch (error) {
-                console.error(error);
-                alert('Erro no login: ' + error.message);
+                alert('Erro: ' + error.message);
             }
         };
 
@@ -85,124 +70,87 @@
             await signOut(auth);
         };
 
-        // ========== MARCAR PRESENÇA ==========
-        window.marcarPresenca = async () => {
+        // ========== MARCAR DIA (público) ==========
+        window.marcarDia = async (dataStr, buttonElement) => {
             if (!usuarioAtual) return;
             
-            const hoje = new Date();
-            const dataRef = hoje.toISOString().split('T')[0];
+            const diaRef = doc(db, 'dias', dataStr);
+            const userMarcouRef = doc(db, 'marcacoes_usuarios', `${usuarioAtual.uid}_${dataStr}`);
             
-            const presencaRef = doc(db, 'presencas', dataRef);
-            await setDoc(presencaRef, {
-                [usuarioAtual.uid]: true
-            }, { merge: true });
+            const userMarcouSnap = await getDoc(userMarcouRef);
             
-            alert('✅ Presença marcada! Obrigado por jejuar e orar.');
-            carregarPresencas();
-        };
-
-        // ========== CARREGAR PRESENÇAS ==========
-        async function carregarPresencas() {
-            const hoje = new Date();
-            const dataRef = hoje.toISOString().split('T')[0];
-            
-            const presencaDoc = await getDoc(doc(db, 'presencas', dataRef));
-            const presentes = presencaDoc.data() || {};
-            
-            // Buscar todos os usuários
-            const usuariosSnapshot = await getDocs(collection(db, 'usuarios'));
-            const usuarios = [];
-            usuariosSnapshot.forEach(doc => {
-                usuarios.push({ id: doc.id, ...doc.data() });
-            });
-            
-            listaPresencaDiv.innerHTML = '';
-            if (usuarios.length === 0) {
-                listaPresencaDiv.innerHTML = '<div style="text-align:center; padding:20px;">Nenhum participante ainda. Seja o primeiro!</div>';
-            }
-            for (const user of usuarios) {
-                const marcou = presentes[user.id] === true;
-                const div = document.createElement('div');
-                div.style.cssText = 'padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;';
-                div.innerHTML = `
-                    <span style="font-weight: bold; color: #2c3e2f;">${escapeHtml(user.nickname)}</span>
-                    <span style="color: ${marcou ? '#2e7d32' : '#b45309'}; font-weight: bold;">${marcou ? '✅ Marcou' : '⬜ Pendente'}</span>
-                    ${usuarioAtual && usuarioAtual.uid === user.id && !marcou ? '<button onclick="marcarPresenca()" class="btn-small">🙏 Marcar presença</button>' : ''}
-                `;
-                listaPresencaDiv.appendChild(div);
-            }
-        }
-
-        // ========== COMENTÁRIOS ==========
-        async function carregarComentarios() {
-            const q = query(collection(db, 'comentarios'), orderBy('createdAt', 'desc'));
-            const unsubscribe = onSnapshot(q, (snapshot) => {
-                muralDiv.innerHTML = '';
-                if (snapshot.empty) {
-                    muralDiv.innerHTML = '<div style="text-align:center; padding:20px;">🙏 Nenhuma oração compartilhada ainda. Seja o primeiro.</div>';
-                }
-                snapshot.forEach(doc => {
-                    const comentario = doc.data();
-                    const div = document.createElement('div');
-                    div.style.cssText = 'background: #fff7ed; border-left: 4px solid #b45309; padding: 12px; margin-bottom: 10px; border-radius: 12px;';
-                    div.innerHTML = `
-                        📝 ${escapeHtml(comentario.texto)}
-                        <div style="font-size: 0.6rem; color: #b45309; margin-top: 6px;">${new Date(comentario.createdAt).toLocaleString()}</div>
-                    `;
-                    muralDiv.appendChild(div);
+            if (userMarcouSnap.exists()) {
+                // Desmarcar
+                await runTransaction(db, async (transaction) => {
+                    const diaDoc = await transaction.get(diaRef);
+                    const novoTotal = (diaDoc.data()?.total || 1) - 1;
+                    transaction.update(diaRef, { total: novoTotal });
+                    transaction.delete(userMarcouRef);
                 });
-            });
-        }
-
-        window.enviarComentario = async () => {
-            if (!usuarioAtual) {
-                alert('Faça login para escrever no mural.');
-                return;
-            }
-            const texto = document.getElementById('comentarioInput').value.trim();
-            if (!texto) {
-                alert('Escreva uma mensagem antes de enviar.');
-                return;
-            }
-            
-            await addDoc(collection(db, 'comentarios'), {
-                texto: texto,
-                createdAt: new Date().toISOString()
-            });
-            
-            document.getElementById('comentarioInput').value = '';
-            alert('✅ Oração enviada anonimamente!');
-        };
-
-        // ========== CALENDÁRIO PESSOAL ==========
-        let diasMarcados = new Set();
-
-        function loadCalendario() {
-            const saved = localStorage.getItem(`calendario_${usuarioAtual?.uid}`);
-            if (saved) diasMarcados = new Set(JSON.parse(saved));
-            else {
-                // Marcar as terças já passadas como exemplo
-                diasMarcados.add("2026-05-19");
-                diasMarcados.add("2026-05-26");
-            }
-        }
-
-        function saveCalendario() {
-            localStorage.setItem(`calendario_${usuarioAtual?.uid}`, JSON.stringify([...diasMarcados]));
-        }
-
-        window.toggleDia = (dataStr, element) => {
-            if (diasMarcados.has(dataStr)) {
-                diasMarcados.delete(dataStr);
-                element.classList.remove('marked');
+                buttonElement.classList.remove('marked');
+                buttonElement.style.background = '#fef9f0';
+                buttonElement.style.color = '#1e2a2e';
+                alert('❌ Marcação removida.');
             } else {
-                diasMarcados.add(dataStr);
-                element.classList.add('marked');
+                // Marcar
+                await runTransaction(db, async (transaction) => {
+                    const diaDoc = await transaction.get(diaRef);
+                    const novoTotal = (diaDoc.data()?.total || 0) + 1;
+                    transaction.set(diaRef, { total: novoTotal, data: dataStr }, { merge: true });
+                    transaction.set(userMarcouRef, { uid: usuarioAtual.uid, data: dataStr });
+                });
+                buttonElement.classList.add('marked');
+                buttonElement.style.background = '#b45309';
+                buttonElement.style.color = 'white';
+                alert('✅ Dia marcado! Obrigado por jejuar e orar.');
             }
-            saveCalendario();
+            
+            // Atualizar contadores
+            await carregarContadorHoje();
+            await carregarContadoresCalendario();
         };
 
-        function gerarCalendario() {
+        // ========== CARREGAR CONTADOR DE HOJE ==========
+        async function carregarContadorHoje() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const diaRef = doc(db, 'dias', hoje);
+            const docSnap = await getDoc(diaRef);
+            const total = docSnap.data()?.total || 0;
+            contadorHojeSpan.textContent = total;
+            
+            // Barra de progresso (baseada em meta de 50 pessoas - ajustável)
+            const meta = 50;
+            const percent = Math.min(100, (total / meta) * 100);
+            barraFill.style.width = percent + '%';
+        }
+
+        // ========== CARREGAR TOTAL DE PARTICIPANTES ==========
+        async function carregarTotalParticipantes() {
+            const usuariosSnapshot = await getDocs(collection(db, 'usuarios'));
+            totalParticipantesSpan.textContent = usuariosSnapshot.size;
+        }
+
+        // ========== CALENDÁRIO COM CONTADORES ==========
+        async function carregarContadoresCalendario() {
+            const diasSnapshot = await getDocs(collection(db, 'dias'));
+            const contadores = {};
+            diasSnapshot.forEach(doc => {
+                contadores[doc.id] = doc.data().total;
+            });
+            
+            // Atualizar cada dia no calendário
+            document.querySelectorAll('.day-cell').forEach(cell => {
+                const dataStr = cell.getAttribute('data-date');
+                const total = contadores[dataStr] || 0;
+                const contadorSpan = cell.querySelector('.contador-dia');
+                if (contadorSpan) {
+                    contadorSpan.textContent = total > 0 ? `🔥 ${total}` : '';
+                }
+            });
+        }
+
+        // ========== GERAR CALENDÁRIO ==========
+        async function gerarCalendario() {
             const meses = [
                 { nome: "MAIO 2026", dias: 31, inicio: 5, ano: 2026, mesNum: 4 },
                 { nome: "JUNHO 2026", dias: 30, inicio: 1, ano: 2026, mesNum: 5 },
@@ -219,6 +167,19 @@
                 { nome: "MAIO 2027", dias: 31, inicio: 6, ano: 2027, mesNum: 4 },
                 { nome: "JUNHO 2027", dias: 10, inicio: 2, ano: 2027, mesNum: 5 }
             ];
+            
+            // Buscar marcações do usuário atual para saber quais dias ele já marcou
+            let marcacoesUsuario = new Set();
+            if (usuarioAtual) {
+                const q = query(collection(db, 'marcacoes_usuarios'), where('uid', '==', usuarioAtual.uid));
+                const snapshot = await getDocs(q);
+                snapshot.forEach(doc => marcacoesUsuario.add(doc.id.split('_')[1]));
+            }
+            
+            // Buscar contadores globais
+            const diasSnapshot = await getDocs(collection(db, 'dias'));
+            const contadores = {};
+            diasSnapshot.forEach(doc => { contadores[doc.id] = doc.data().total; });
             
             calendarDiv.innerHTML = '';
             
@@ -257,14 +218,30 @@
                 
                 for (let d = 1; d <= mes.dias; d++) {
                     const dataStr = `${mes.ano}-${String(mes.mesNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                    const isMarked = diasMarcados.has(dataStr);
+                    const total = contadores[dataStr] || 0;
+                    const usuarioMarcou = marcacoesUsuario.has(dataStr);
                     
                     const dayDiv = document.createElement('div');
-                    dayDiv.className = 'day-cell' + (isMarked ? ' marked' : '');
-                    dayDiv.style.cssText = 'background: #fef9f0; border-radius: 16px; padding: 10px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db;' + (isMarked ? ' background: #b45309; color: white;' : '');
-                    dayDiv.textContent = d;
+                    dayDiv.className = 'day-cell';
+                    dayDiv.setAttribute('data-date', dataStr);
+                    dayDiv.style.cssText = 'background: #fef9f0; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db; position: relative;' + (usuarioMarcou ? ' background: #b45309; color: white;' : '');
+                    
+                    const dayNumber = document.createElement('div');
+                    dayNumber.style.fontWeight = 'bold';
+                    dayNumber.style.fontSize = '1rem';
+                    dayNumber.textContent = d;
+                    dayDiv.appendChild(dayNumber);
+                    
+                    if (total > 0) {
+                        const contadorSpan = document.createElement('div');
+                        contadorSpan.className = 'contador-dia';
+                        contadorSpan.style.cssText = 'font-size: 0.6rem; margin-top: 4px;';
+                        contadorSpan.textContent = `🔥 ${total}`;
+                        dayDiv.appendChild(contadorSpan);
+                    }
+                    
                     dayDiv.onclick = (function(ds, el) {
-                        return () => toggleDia(ds, el);
+                        return () => marcarDia(ds, el);
                     })(dataStr, dayDiv);
                     body.appendChild(dayDiv);
                 }
@@ -277,30 +254,22 @@
             const hoje = new Date();
             const mesAtual = hoje.getMonth();
             const anoAtual = hoje.getFullYear();
-            const monthCards = document.querySelectorAll('.month-body');
+            const monthBodies = document.querySelectorAll('.month-body');
             for (let i = 0; i < meses.length; i++) {
                 if (meses[i].ano === anoAtual && meses[i].mesNum === mesAtual) {
-                    if (monthCards[i]) monthCards[i].style.display = 'grid';
+                    if (monthBodies[i]) monthBodies[i].style.display = 'grid';
                     break;
                 }
             }
-            if (monthCards[0] && !document.querySelector('.month-body[style*="grid"]')) {
-                monthCards[0].style.display = 'grid';
+            if (monthBodies[0] && !document.querySelector('.month-body[style*="grid"]')) {
+                monthBodies[0].style.display = 'grid';
             }
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
         }
 
         // ========== OBSERVADOR DE AUTENTICAÇÃO ==========
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 usuarioAtual = user;
-                
-                // Buscar nickname do Firestore
                 const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
                 const userData = userDoc.data();
                 usuarioNickname = userData?.nickname || user.email.split('@')[0];
@@ -311,10 +280,9 @@
                 userNicknameSpan.textContent = usuarioNickname;
                 userEmailSpan.textContent = user.email;
                 
-                loadCalendario();
-                gerarCalendario();
-                carregarPresencas();
-                carregarComentarios();
+                await gerarCalendario();
+                await carregarContadorHoje();
+                await carregarTotalParticipantes();
             } else {
                 usuarioAtual = null;
                 splashScreen.style.display = 'flex';
@@ -334,7 +302,6 @@
         }
         .container { max-width: 1200px; margin: 0 auto; }
         
-        /* Splash / Login */
         .splash {
             display: flex;
             flex-direction: column;
@@ -344,9 +311,7 @@
             text-align: center;
         }
         .splash h1 { font-size: 2rem; color: #b45309; margin-bottom: 16px; }
-        .splash p { color: #6c6f6b; max-width: 500px; margin-bottom: 30px; }
         
-        /* Cards */
         .card-section {
             background: white;
             border-radius: 28px;
@@ -372,19 +337,8 @@
         .btn:hover { background: #9a3e06; }
         .btn-small { padding: 6px 12px; font-size: 0.8rem; background: #b45309; color: white; border: none; border-radius: 40px; cursor: pointer; }
         
-        input, textarea {
-            width: 100%;
-            padding: 12px 16px;
-            border-radius: 40px;
-            border: 1px solid #e7e5e4;
-            background: #fef9f0;
-            font-family: inherit;
-            font-size: 1rem;
-            margin-bottom: 12px;
-        }
-        textarea { border-radius: 24px; resize: vertical; }
-        
-        .day-cell.marked { background: #b45309 !important; color: white !important; }
+        .google-btn { background: #4285f4; }
+        .google-btn:hover { background: #357ae8; }
         
         .top-bar {
             display: flex;
@@ -404,29 +358,42 @@
             border-top: 1px solid #e7e5e4;
         }
         
-        .google-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            background: #4285f4;
+        .contador-container {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #fff7ed;
+            border-radius: 28px;
         }
-        .google-btn:hover { background: #357ae8; }
+        .contador-numero {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #b45309;
+        }
+        .progress-bar {
+            margin-top: 12px;
+            background: #e7e5e4;
+            border-radius: 20px;
+            height: 12px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: #b45309;
+            width: 0%;
+            height: 100%;
+            transition: width 0.3s;
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <!-- Tela de Login -->
     <div id="splashScreen" class="splash">
         <h1>📆 Calendário do Jornaleiro</h1>
         <p>"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</p>
-        <button class="btn google-btn" onclick="loginComGoogle()">
-            <strong>🔐 Entrar com Google</strong>
-        </button>
-        <p style="margin-top: 20px; font-size: 0.75rem;">🔒 Você escolherá um nickname público. Seu nome real não será exibido.</p>
+        <button class="btn google-btn" onclick="loginComGoogle()">🔐 Entrar com Google</button>
+        <p style="margin-top: 20px; font-size: 0.75rem;">🔒 Escolha um nickname público. Ninguém saberá seu nome real.</p>
     </div>
 
-    <!-- Tela Principal -->
     <div id="appScreen" style="display: none;">
         <div class="top-bar">
             <h1 style="font-size: 1.5rem;">📆 Calendário do Jornaleiro</h1>
@@ -436,41 +403,33 @@
                 <button class="btn-small" onclick="logout()" style="margin-left: 10px;">Sair</button>
             </div>
         </div>
-        
+
+        <!-- CONTADOR PÚBLICO -->
         <div class="card-section">
-    <h2>📋 Presença nesta terça-feira</h2>
-    
-    <!-- CONTADOR PÚBLICO -->
-    <div id="contadorContainer" style="text-align: center; margin-bottom: 20px; padding: 16px; background: #fff7ed; border-radius: 28px;">
-        <div style="font-size: 0.8rem; color: #6c6f6b;">🙏 Pessoas que jejuaram e oraram hoje</div>
-        <div id="contadorPresenca" style="font-size: 3rem; font-weight: bold; color: #b45309;">0</div>
-        <div id="barraProgresso" style="margin-top: 12px; background: #e7e5e4; border-radius: 20px; height: 12px; overflow: hidden;">
-            <div id="barraFill" style="background: #b45309; width: 0%; height: 100%; transition: width 0.3s;"></div>
+            <h2>🙏 Propósito de Jejum e Oração</h2>
+            <div class="contador-container">
+                <div style="font-size: 0.8rem; color: #6c6f6b;">Pessoas que jejuaram e oraram HOJE</div>
+                <div class="contador-numero" id="contadorHoje">0</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="barraFill"></div>
+                </div>
+                <div style="font-size: 0.7rem; margin-top: 8px;" id="totalParticipantes"></div>
+            </div>
+            <div class="aviso">
+                🔥 Clique em qualquer dia do calendário para marcar que você jejuou e orou naquele dia.<br>
+                O número 🔥 mostra quantas pessoas já marcaram aquele dia.
+            </div>
         </div>
-        <div id="totalParticipantes" style="font-size: 0.7rem; color: #6c6f6b; margin-top: 8px;"></div>
-    </div>
-    
-    <div class="aviso">✅ Clique em "Marcar presença" ao lado do seu nome quando você orar/jejuar.</div>
-    <div id="listaPresenca"></div>
-    </div>
-        
+
+        <!-- CALENDÁRIO -->
         <div class="card-section">
-            <h2>📅 Seu calendário pessoal</h2>
-            <div class="aviso">Clique nos dias que você orou/jejuou. Isso é apenas para você.</div>
+            <h2>📅 Calendário Coletivo</h2>
             <div id="calendar"></div>
-        </div>
-        
-        <div class="card-section">
-            <h2>✍️ Mural de orações (anônimo)</h2>
-            <div class="aviso">Todos veem, ninguém sabe quem escreveu.</div>
-            <div id="mural"></div>
-            <textarea id="comentarioInput" rows="3" placeholder="Compartilhe um pedido de oração, testemunho ou palavra..."></textarea>
-            <button class="btn" onclick="enviarComentario()" style="width: auto;">📨 Enviar oração</button>
         </div>
     </div>
 
     <footer>
-        <p>🙏 Propósito de oração e jejum toda terça-feira.</p>
+        <p>🙏 Propósito de oração e jejum - Clique nos dias que você participou.</p>
     </footer>
 </div>
 </body>
