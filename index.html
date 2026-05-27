@@ -438,10 +438,21 @@
         </div>
         
         <div class="card-section">
-            <h2>📋 Presença nesta terça-feira</h2>
-            <div class="aviso">✅ Clique em "Marcar presença" ao lado do seu nome quando você orar/jejuar.</div>
-            <div id="listaPresenca"></div>
+    <h2>📋 Presença nesta terça-feira</h2>
+    
+    <!-- CONTADOR PÚBLICO -->
+    <div id="contadorContainer" style="text-align: center; margin-bottom: 20px; padding: 16px; background: #fff7ed; border-radius: 28px;">
+        <div style="font-size: 0.8rem; color: #6c6f6b;">🙏 Pessoas que jejuaram e oraram hoje</div>
+        <div id="contadorPresenca" style="font-size: 3rem; font-weight: bold; color: #b45309;">0</div>
+        <div id="barraProgresso" style="margin-top: 12px; background: #e7e5e4; border-radius: 20px; height: 12px; overflow: hidden;">
+            <div id="barraFill" style="background: #b45309; width: 0%; height: 100%; transition: width 0.3s;"></div>
         </div>
+        <div id="totalParticipantes" style="font-size: 0.7rem; color: #6c6f6b; margin-top: 8px;"></div>
+    </div>
+    
+    <div class="aviso">✅ Clique em "Marcar presença" ao lado do seu nome quando você orar/jejuar.</div>
+    <div id="listaPresenca"></div>
+    </div>
         
         <div class="card-section">
             <h2>📅 Seu calendário pessoal</h2>
