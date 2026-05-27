@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Calendário do Jornaleiro | Isaías 21</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: #f5f3ef;
@@ -17,24 +14,10 @@
             padding: 20px;
             line-height: 1.4;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-        h1 {
-            font-size: 1.8rem;
-            color: #b45309;
-            margin-bottom: 8px;
-        }
-        .versiculo {
-            font-style: italic;
-            color: #6c6f6b;
-            font-size: 0.9rem;
-        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 24px; }
+        h1 { font-size: 1.8rem; color: #b45309; margin-bottom: 8px; }
+        .versiculo { font-style: italic; color: #6c6f6b; font-size: 0.9rem; }
         .stats {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -49,17 +32,8 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.05);
             border: 1px solid #e7e5e4;
         }
-        .stat-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #b45309;
-        }
-        .stat-value {
-            font-size: 1.6rem;
-            font-weight: bold;
-            color: #2c3e2f;
-        }
+        .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #b45309; }
+        .stat-value { font-size: 1.6rem; font-weight: bold; color: #2c3e2f; }
         .progress-bar {
             background: #e7e5e4;
             border-radius: 30px;
@@ -67,12 +41,7 @@
             overflow: hidden;
             margin-bottom: 24px;
         }
-        .progress-fill {
-            background: #b45309;
-            width: 0%;
-            height: 100%;
-            transition: width 0.2s;
-        }
+        .progress-fill { background: #b45309; width: 0%; height: 100%; transition: width 0.2s; }
         .controls {
             display: flex;
             gap: 12px;
@@ -90,10 +59,7 @@
             color: #1e2a2e;
             transition: 0.2s;
         }
-        .btn-primary {
-            background: #b45309;
-            color: white;
-        }
+        .btn-primary { background: #b45309; color: white; }
         .btn-primary:hover { background: #9a3e06; }
         .btn-secondary:hover { background: #d6d3d1; }
         .legenda {
@@ -106,16 +72,8 @@
             gap: 16px;
             flex-wrap: wrap;
         }
-        .legenda span {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .calendar {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+        .legenda span { display: inline-flex; align-items: center; gap: 4px; }
+        .calendar { display: flex; flex-direction: column; gap: 20px; }
         .month-card {
             background: white;
             border-radius: 28px;
@@ -137,9 +95,7 @@
             grid-template-columns: repeat(7, 1fr);
             gap: 6px;
         }
-        .month-card.open .month-days {
-            display: grid;
-        }
+        .month-card.open .month-days { display: grid; }
         .day-cell {
             background: #fef9f0;
             border-radius: 16px;
@@ -149,42 +105,86 @@
             transition: all 0.1s;
             font-size: 0.75rem;
             border: 1px solid #f0e7db;
+            position: relative;
         }
-        .day-cell.marked {
+        .day-cell.marked { background: #b45309; color: white; border-color: #b45309; }
+        .day-cell.tuesday { border: 2px solid #fbbf24; background: #fffbeb; }
+        .day-cell.tuesday.marked { background: #b45309; border: 2px solid #ffd966; }
+        .day-cell.festa { background: #d97706; color: white; }
+        .day-cell.shabbat { background: #4b5563; color: white; }
+        .day-cell.festa.marked, .day-cell.shabbat.marked { background: #b45309; outline: 2px solid #fbbf24; }
+        .day-number { font-weight: bold; font-size: 1rem; }
+        .day-event { font-size: 0.6rem; display: block; white-space: normal; line-height: 1.2; }
+        .contador-marcacoes {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 0.5rem;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border-radius: 10px;
+            padding: 0px 4px;
+        }
+        .card-section {
+            margin-top: 30px;
+            background: white;
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 1px solid #e7e5e4;
+        }
+        .card-section h3 { color: #b45309; margin-bottom: 8px; }
+        .aviso-anonimo { font-size: 0.7rem; color: #6c6f6b; margin-bottom: 12px; }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 20px;
+            border: 1px solid #e7e5e4;
+            background: #fef9f0;
+            font-family: inherit;
+            resize: vertical;
+        }
+        .btn-enviar {
+            margin-top: 8px;
             background: #b45309;
             color: white;
-            border-color: #b45309;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 20px;
+            cursor: pointer;
         }
-        .day-cell.tuesday {
-            border: 2px solid #fbbf24;
-            background: #fffbeb;
+        .mensagem-item {
+            background: #fff7ed;
+            border-left: 4px solid #b45309;
+            padding: 12px;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
         }
-        .day-cell.tuesday.marked {
-            background: #b45309;
-            border: 2px solid #ffd966;
+        .mensagem-data { font-size: 0.6rem; color: #b45309; margin-top: 6px; }
+        .participante-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 10px;
         }
-        .day-cell.festa {
-            background: #d97706;
-            color: white;
-        }
-        .day-cell.shabbat {
-            background: #4b5563;
-            color: white;
-        }
-        .day-cell.festa.marked, .day-cell.shabbat.marked {
-            background: #b45309;
-            outline: 2px solid #fbbf24;
-        }
-        .day-number {
+        .contador-grande {
+            font-size: 2.5rem;
             font-weight: bold;
-            font-size: 1rem;
+            color: #b45309;
         }
-        .day-event {
-            font-size: 0.6rem;
-            display: block;
-            white-space: normal;
-            line-height: 1.2;
+        /* Painel admin (oculto) */
+        .admin-panel {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: #fef3c7;
+            border-radius: 20px;
+            border: 1px solid #fbbf24;
         }
+        .admin-panel.visible { display: block; }
         footer {
             text-align: center;
             margin-top: 32px;
@@ -210,93 +210,134 @@
 
     <div class="stats">
         <div class="stat-card"><div class="stat-label">Início</div><div class="stat-value">16/05/2026 · 22h</div></div>
-        <div class="stat-card"><div class="stat-label">Total de dias</div><div class="stat-value" id="totalDias">384</div></div>
-        <div class="stat-card"><div class="stat-label">Já contados</div><div class="stat-value" id="contados">0</div></div>
-        <div class="stat-card"><div class="stat-label">Faltam</div><div class="stat-value" id="faltam">384</div></div>
-    </div>
-    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-
-    <div class="controls">
-        <button id="resetBtn" class="btn btn-secondary">🔄 Reiniciar contagem</button>
-        <button id="exportBtn" class="btn btn-secondary">📋 Exportar progresso</button>
+        <div class="stat-card"><div class="stat-label">Total de dias</div><div class="stat-value">384</div></div>
+        <div class="stat-card"><div class="stat-label">Já contados (vcs)</div><div class="stat-value" id="totalMarcacoesGlobais">0</div></div>
+        <div class="stat-card"><div class="stat-label">Participantes</div><div class="stat-value" id="contadorParticipantes">0</div></div>
     </div>
 
     <div class="legenda">
-        <span>✅ Marcado</span> <span>⬜ Pendente</span> <span>🕯️ Festa (início/fim)</span> <span>⭐ Sábado</span> <span>☑️ Terça (ticar)</span>
+        <span>✅ Seu tique</span> <span>🔢 Total de tiques (todos)</span> <span>🕯️ Festa</span> <span>⭐ Sábado</span> <span>☑️ Terça</span>
     </div>
 
     <div id="calendar" class="calendar"></div>
+
+    <!-- SEÇÃO PARTICIPANTES -->
+    <div class="card-section">
+        <h3>🙋 Participantes do Propósito</h3>
+        <div class="aviso-anonimo">🔒 Clique em "Participei" para registrar seu compromisso. Apenas o total de pessoas é visível.</div>
+        <div class="participante-box">
+            <div style="text-align: center;">
+                <div class="contador-grande" id="contadorParticipantesLocal">0</div>
+                <div style="font-size: 0.75rem;">pessoas já disseram "sim"</div>
+            </div>
+            <button id="btnParticipar" class="btn-enviar" style="background: #b45309; padding: 12px 24px; font-size: 1.1rem;">
+                🙋 Participei (anônimo)
+            </button>
+        </div>
+        <div id="jaParticipouMsg" style="margin-top: 12px; font-size: 0.7rem; color: #4c9f70; display: none;">
+            ✅ Você já registrou sua participação neste propósito.
+        </div>
+    </div>
+
+    <!-- SEÇÃO COMENTÁRIOS -->
+    <div class="card-section">
+        <h3>✍️ Mural de orações (anônimo - todos veem)</h3>
+        <div class="aviso-anonimo">🔒 Comentários são anônimos e visíveis para todos que estão no propósito.</div>
+        <textarea id="msgAnonimo" rows="3" placeholder="Escreva seu pedido de oração, testemunho ou palavra..."></textarea>
+        <button id="btnEnviarMsg" class="btn-enviar">📨 Enviar (anônimo)</button>
+        <div id="loadingMsg" style="font-size:0.7rem; color:#b45309; margin-top:8px;"></div>
+        <div id="areaMensagens" style="margin-top:20px; max-height: 400px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- PAINEL ADMIN (oculto - só você vê com senha) -->
+    <div class="card-section" id="adminSection" style="display: none;">
+        <h3>👑 Painel do Administrador</h3>
+        <div id="listaParticipantesAdmin" style="font-size: 0.8rem; max-height: 200px; overflow-y: auto;"></div>
+        <button id="btnRefreshAdmin" class="btn-secondary" style="margin-top: 10px;">Atualizar</button>
+    </div>
+    <div style="text-align: center; margin-top: 10px;">
+        <button id="btnAdminLogin" class="btn-secondary" style="font-size: 0.7rem;">🔐 Acesso restrito</button>
+    </div>
+
     <footer>
-        <p>🙏 Simulação-ação de graças pela fidelidade de D'us.<br>Reunimo-nos às terças-feiras — clique no dia para ticar.</p>
-        <p>Base: Calendário Hebraico · 384 dias · Término previsto: ~03/06/2027</p>
+        <p>🙏 Cada terça-feira: jejum e oração. Clique nos dias para marcar.<br>Os números em cinza mostram quantas pessoas já marcaram cada dia.</p>
     </footer>
 </div>
 
 <script>
-const totalDias = 384;
-let diasMarcados = new Set();
+// ==================== CONFIGURAÇÃO SUPABASE ====================
+// COLOQUE SUAS CREDENCIAIS AQUI:
+const SUPABASE_URL = "https://rnficvbqandagcvmwipq.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJuZmljdmJxYW5kYWdjdm13aXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MDE2MzgsImV4cCI6MjA5NTQ3NzYzOH0.Pd-JPnm0JcTi8-Unsw4nK1JQl6QoupiTic5A-GaOfbo";
+// SENHA DO ADMIN (só você sabe)
+const ADMIN_SENHA = "yQ8NSXrPKyh0PUK9";
 
-// ========== EVENTOS OTIMIZADOS (início/fim para festas longas) ==========
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ==================== IDENTIFICADOR ÚNICO ANÔNIMO ====================
+let sessaoHash = localStorage.getItem('jornaleiro_sessao');
+if (!sessaoHash) {
+    sessaoHash = 'user_' + Math.random().toString(36) + Date.now().toString(36);
+    localStorage.setItem('jornaleiro_sessao', sessaoHash);
+}
+
+// ==================== CALENDÁRIO ====================
 const meses = [
-    { nome: "MAIO 2026", dias: 31, inicioSemana: 5, eventos: { 
-        19: "☑️ Terça", 21: "🕯️ Início Shavuot", 23: "🕯️ Fim Shavuot ⭐", 26: "☑️ Terça" } },
-    { nome: "JUNHO 2026", dias: 30, inicioSemana: 1, eventos: { 
-        2: "☑️ Terça", 9: "☑️ Terça", 16: "☑️ Terça", 23: "☑️ Terça", 30: "☑️ Terça" } },
-    { nome: "JULHO 2026", dias: 31, inicioSemana: 3, eventos: { 
-        4: "⭐", 7: "☑️ Terça", 11: "⭐", 14: "☑️ Terça", 18: "⭐", 21: "☑️ Terça", 
-        22: "🕯️ Tisha B'Av", 23: "🕯️ Tisha B'Av", 25: "⭐", 28: "☑️ Terça" } },
-    { nome: "AGOSTO 2026", dias: 31, inicioSemana: 6, eventos: { 
-        1: "⭐", 4: "☑️ Terça", 8: "⭐", 11: "☑️ Terça", 15: "⭐", 18: "☑️ Terça", 22: "⭐", 25: "☑️ Terça", 29: "⭐" } },
-    { nome: "SETEMBRO 2026", dias: 30, inicioSemana: 2, eventos: { 
-        1: "☑️ Terça", 5: "⭐", 8: "☑️ Terça", 11: "🕯️ Início Rosh Hashaná", 13: "🕯️ Fim Rosh Hashaná", 
-        15: "☑️ Terça", 19: "⭐", 20: "🕯️ Yom Kippur", 21: "🕯️ Yom Kippur", 22: "☑️ Terça", 
-        25: "🕯️ Início Sucot ⭐", 30: "🕯️ Fim Sucot", 29: "☑️ Terça" } },
-    { nome: "OUTUBRO 2026", dias: 31, inicioSemana: 4, eventos: { 
-        1: "🕯️ Sucot", 2: "🕯️ Shemini Atzeret ⭐", 3: "🕯️ Simchat Torá", 4: "⭐", 6: "☑️ Terça", 10: "⭐", 
-        13: "☑️ Terça", 17: "⭐", 20: "☑️ Terça", 24: "⭐", 27: "☑️ Terça", 31: "⭐" } },
-    { nome: "NOVEMBRO 2026", dias: 30, inicioSemana: 0, eventos: { 
-        3: "☑️ Terça", 7: "⭐", 10: "☑️ Terça", 14: "⭐", 17: "☑️ Terça", 21: "⭐", 24: "☑️ Terça", 28: "⭐" } },
-    { nome: "DEZEMBRO 2026", dias: 31, inicioSemana: 2, eventos: { 
-        1: "☑️ Terça", 4: "🕯️ Início Chanucá ⭐", 12: "🕯️ Fim Chanucá ⭐", 8: "☑️ Terça", 
-        15: "☑️ Terça", 19: "⭐", 22: "☑️ Terça", 26: "⭐", 29: "☑️ Terça" } },
-    { nome: "JANEIRO 2027", dias: 31, inicioSemana: 5, eventos: { 
-        2: "⭐", 5: "☑️ Terça", 9: "⭐", 12: "☑️ Terça", 16: "⭐", 19: "☑️ Terça", 
-        22: "🕯️ Tu BiShvat", 23: "🕯️ Tu BiShvat ⭐", 26: "☑️ Terça", 30: "⭐" } },
-    { nome: "FEVEREIRO 2027", dias: 28, inicioSemana: 1, eventos: { 
-        2: "☑️ Terça", 6: "⭐", 9: "☑️ Terça", 13: "⭐", 16: "☑️ Terça", 20: "⭐", 23: "☑️ Terça", 27: "⭐" } },
-    { nome: "MARÇO 2027", dias: 31, inicioSemana: 1, eventos: { 
-        2: "☑️ Terça", 6: "⭐", 9: "☑️ Terça", 13: "⭐", 16: "☑️ Terça", 20: "⭐", 
-        22: "🕯️ Início Purim", 23: "🕯️ Fim Purim + ☑️ Terça", 27: "⭐", 30: "☑️ Terça" } },
-    { nome: "ABRIL 2027", dias: 30, inicioSemana: 4, eventos: { 
-        3: "⭐", 6: "☑️ Terça", 10: "⭐", 13: "☑️ Terça", 17: "⭐", 20: "☑️ Terça", 
-        21: "🕯️ Início Pêssach", 28: "🕯️ Fim Pêssach + ☑️ Terça" } },
-    { nome: "MAIO 2027", dias: 31, inicioSemana: 6, eventos: { 
-        1: "⭐", 4: "☑️ Terça", 8: "⭐", 11: "☑️ Terça", 15: "⭐", 18: "☑️ Terça", 22: "⭐", 
-        24: "🕯️ Início Lag BaOmer", 25: "🕯️ Fim Lag BaOmer + ☑️ Terça", 29: "⭐" } },
-    { nome: "JUNHO 2027", dias: 10, inicioSemana: 2, eventos: { 
-        1: "☑️ Terça", 5: "⭐", 8: "☑️ Terça", 10: "🕯️ Shavuot", 11: "⭐" } }
+    { nome: "MAIO 2026", dias: 31, inicioSemana: 5, eventos: { 19: "☑️ Terça", 21: "🕯️ Início Shavuot", 23: "🕯️ Fim Shavuot ⭐", 26: "☑️ Terça" } },
+    { nome: "JUNHO 2026", dias: 30, inicioSemana: 1, eventos: { 2: "☑️ Terça", 9: "☑️ Terça", 16: "☑️ Terça", 23: "☑️ Terça", 30: "☑️ Terça" } },
+    { nome: "JULHO 2026", dias: 31, inicioSemana: 3, eventos: { 4: "⭐", 7: "☑️ Terça", 11: "⭐", 14: "☑️ Terça", 18: "⭐", 21: "☑️ Terça", 22: "🕯️ Tisha B'Av", 23: "🕯️ Tisha B'Av", 25: "⭐", 28: "☑️ Terça" } },
+    { nome: "AGOSTO 2026", dias: 31, inicioSemana: 6, eventos: { 1: "⭐", 4: "☑️ Terça", 8: "⭐", 11: "☑️ Terça", 15: "⭐", 18: "☑️ Terça", 22: "⭐", 25: "☑️ Terça", 29: "⭐" } },
+    { nome: "SETEMBRO 2026", dias: 30, inicioSemana: 2, eventos: { 1: "☑️ Terça", 5: "⭐", 8: "☑️ Terça", 11: "🕯️ Início Rosh Hashaná", 13: "🕯️ Fim Rosh Hashaná", 15: "☑️ Terça", 19: "⭐", 20: "🕯️ Yom Kippur", 21: "🕯️ Yom Kippur", 22: "☑️ Terça", 25: "🕯️ Início Sucot ⭐", 30: "🕯️ Fim Sucot", 29: "☑️ Terça" } },
+    { nome: "OUTUBRO 2026", dias: 31, inicioSemana: 4, eventos: { 1: "🕯️ Sucot", 2: "🕯️ Shemini Atzeret ⭐", 3: "🕯️ Simchat Torá", 4: "⭐", 6: "☑️ Terça", 10: "⭐", 13: "☑️ Terça", 17: "⭐", 20: "☑️ Terça", 24: "⭐", 27: "☑️ Terça", 31: "⭐" } },
+    { nome: "NOVEMBRO 2026", dias: 30, inicioSemana: 0, eventos: { 3: "☑️ Terça", 7: "⭐", 10: "☑️ Terça", 14: "⭐", 17: "☑️ Terça", 21: "⭐", 24: "☑️ Terça", 28: "⭐" } },
+    { nome: "DEZEMBRO 2026", dias: 31, inicioSemana: 2, eventos: { 1: "☑️ Terça", 4: "🕯️ Início Chanucá ⭐", 12: "🕯️ Fim Chanucá ⭐", 8: "☑️ Terça", 15: "☑️ Terça", 19: "⭐", 22: "☑️ Terça", 26: "⭐", 29: "☑️ Terça" } },
+    { nome: "JANEIRO 2027", dias: 31, inicioSemana: 5, eventos: { 2: "⭐", 5: "☑️ Terça", 9: "⭐", 12: "☑️ Terça", 16: "⭐", 19: "☑️ Terça", 22: "🕯️ Tu BiShvat", 23: "🕯️ Tu BiShvat ⭐", 26: "☑️ Terça", 30: "⭐" } },
+    { nome: "FEVEREIRO 2027", dias: 28, inicioSemana: 1, eventos: { 2: "☑️ Terça", 6: "⭐", 9: "☑️ Terça", 13: "⭐", 16: "☑️ Terça", 20: "⭐", 23: "☑️ Terça", 27: "⭐" } },
+    { nome: "MARÇO 2027", dias: 31, inicioSemana: 1, eventos: { 2: "☑️ Terça", 6: "⭐", 9: "☑️ Terça", 13: "⭐", 16: "☑️ Terça", 20: "⭐", 22: "🕯️ Início Purim", 23: "🕯️ Fim Purim + ☑️ Terça", 27: "⭐", 30: "☑️ Terça" } },
+    { nome: "ABRIL 2027", dias: 30, inicioSemana: 4, eventos: { 3: "⭐", 6: "☑️ Terça", 10: "⭐", 13: "☑️ Terça", 17: "⭐", 20: "☑️ Terça", 21: "🕯️ Início Pêssach", 28: "🕯️ Fim Pêssach + ☑️ Terça" } },
+    { nome: "MAIO 2027", dias: 31, inicioSemana: 6, eventos: { 1: "⭐", 4: "☑️ Terça", 8: "⭐", 11: "☑️ Terça", 15: "⭐", 18: "☑️ Terça", 22: "⭐", 24: "🕯️ Início Lag BaOmer", 25: "🕯️ Fim Lag BaOmer + ☑️ Terça", 29: "⭐" } },
+    { nome: "JUNHO 2027", dias: 10, inicioSemana: 2, eventos: { 1: "☑️ Terça", 5: "⭐", 8: "☑️ Terça", 10: "🕯️ Shavuot", 11: "⭐" } }
 ];
 
-// Carregar salvos e marcar 19 e 26/05 como padrão
-function loadProgresso() {
-    const saved = localStorage.getItem('jornaleiro_marcados');
-    if (saved) diasMarcados = new Set(JSON.parse(saved));
-    else { diasMarcados.add("2026-05-19"); diasMarcados.add("2026-05-26"); }
-    updateStats();
+let marcacoesGlobais = {}; // { "2026-05-19": 5, ... }
+
+// Carregar marcações globais do banco
+async function carregarMarcacoesGlobais() {
+    const { data, error } = await supabase.from('dias_marcados').select('data_dia');
+    if (error) { console.error(error); return; }
+    marcacoesGlobais = {};
+    data.forEach(m => { marcacoesGlobais[m.data_dia] = (marcacoesGlobais[m.data_dia] || 0) + 1; });
+    document.getElementById('totalMarcacoesGlobais').textContent = data.length || 0;
+    gerarCalendario(); // recarregar para mostrar os números
 }
-function saveProgresso() { localStorage.setItem('jornaleiro_marcados', JSON.stringify([...diasMarcados])); updateStats(); }
-function updateStats() {
-    const c = diasMarcados.size;
-    document.getElementById('contados').textContent = c;
-    document.getElementById('faltam').textContent = totalDias - c;
-    document.getElementById('progressFill').style.width = (c/totalDias*100)+'%';
+
+// Verificar se usuário já marcou este dia
+async function usuarioJaMarcou(dataDia) {
+    const { data, error } = await supabase
+        .from('dias_marcados')
+        .select('id')
+        .eq('data_dia', dataDia)
+        .eq('sessao_hash', sessaoHash)
+        .maybeSingle();
+    if (error) return false;
+    return !!data;
 }
-function toggleDia(dateStr, cell) {
-    if (diasMarcados.has(dateStr)) { diasMarcados.delete(dateStr); cell.classList.remove('marked'); }
-    else { diasMarcados.add(dateStr); cell.classList.add('marked'); }
-    saveProgresso();
+
+async function toggleDiaGlobal(dataDia, element) {
+    const jaMarcou = await usuarioJaMarcou(dataDia);
+    if (jaMarcou) {
+        // Desmarcar (delete)
+        await supabase.from('dias_marcados').delete().eq('data_dia', dataDia).eq('sessao_hash', sessaoHash);
+        element.classList.remove('marked');
+    } else {
+        // Marcar
+        await supabase.from('dias_marcados').insert({ data_dia: dataDia, sessao_hash: sessaoHash });
+        element.classList.add('marked');
+    }
+    await carregarMarcacoesGlobais();
 }
-function gerarCalendario() {
+
+async function gerarCalendario() {
     const container = document.getElementById('calendar');
     container.innerHTML = '';
     for (let mi=0; mi<meses.length; mi++) {
@@ -309,27 +350,111 @@ function gerarCalendario() {
         ['D','S','T','Q','Q','S','S'].forEach(d => { let dDiv = document.createElement('div'); dDiv.textContent = d; dDiv.style.fontWeight='bold'; dDiv.style.color='#b45309'; grid.appendChild(dDiv); });
         for (let i=0; i<m.inicioSemana; i++) { let e = document.createElement('div'); grid.appendChild(e); }
         for (let d=1; d<=m.dias; d++) {
-            let dateStr = `2026-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            if (mi>=12) dateStr = `2027-${String(mi-11).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            let dataStr = `2026-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            if (mi>=12) dataStr = `2027-${String(mi-11).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const ev = m.eventos[d] || '';
-            const isMarked = diasMarcados.has(dateStr);
+            const jaMarcou = await usuarioJaMarcou(dataStr);
+            const totalMarcadores = marcacoesGlobais[dataStr] || 0;
+            
             const dayDiv = document.createElement('div'); dayDiv.className = 'day-cell';
-            if (isMarked) dayDiv.classList.add('marked');
+            if (jaMarcou) dayDiv.classList.add('marked');
             if (ev.includes('☑️') || ev.includes('Terça')) dayDiv.classList.add('tuesday');
             if (ev.includes('🕯️')) dayDiv.classList.add('festa');
             if (ev.includes('⭐')) dayDiv.classList.add('shabbat');
+            
             const numSpan = document.createElement('span'); numSpan.className = 'day-number'; numSpan.textContent = d;
             dayDiv.appendChild(numSpan);
             if (ev) { let evSpan = document.createElement('span'); evSpan.className = 'day-event'; evSpan.textContent = ev.replace('⭐','').trim(); dayDiv.appendChild(evSpan); }
-            dayDiv.onclick = (function(ds, el) { return () => toggleDia(ds, el); })(dateStr, dayDiv);
+            
+            // Mostrar quantos marcaram este dia
+            if (totalMarcadores > 0) {
+                const contSpan = document.createElement('span'); contSpan.className = 'contador-marcacoes'; contSpan.textContent = `🔢${totalMarcadores}`;
+                dayDiv.appendChild(contSpan);
+            }
+            
+            dayDiv.onclick = (function(ds, el) { return async () => { await toggleDiaGlobal(ds, el); }; })(dataStr, dayDiv);
             grid.appendChild(dayDiv);
         }
         card.appendChild(header); card.appendChild(grid); container.appendChild(card);
     }
 }
-document.getElementById('resetBtn').onclick = () => { if(confirm('Resetar tudo?')){ diasMarcados.clear(); diasMarcados.add("2026-05-19"); diasMarcados.add("2026-05-26"); saveProgresso(); gerarCalendario(); } };
-document.getElementById('exportBtn').onclick = () => { let t = [...diasMarcados].sort().join('\n'); navigator.clipboard.writeText(t); alert('Lista copiada!'); };
-loadProgresso(); gerarCalendario();
-</script>
-</body>
-</html>
+
+// ==================== PARTICIPANTES ====================
+let usuarioJaParticipou = false;
+
+async function registrarParticipacao() {
+    if (usuarioJaParticipou) { alert('Você já registrou sua participação.'); return; }
+    const { error } = await supabase.from('participantes').insert({ sessao_hash: sessaoHash });
+    if (error && error.code !== '23505') { console.error(error); alert('Erro, tente novamente.'); return; }
+    usuarioJaParticipou = true;
+    localStorage.setItem('jornaleiro_participou', 'true');
+    await carregarTotalParticipantes();
+    document.getElementById('jaParticipouMsg').style.display = 'block';
+    document.getElementById('btnParticipar').disabled = true;
+    alert('✅ Participação registrada anonimamente!');
+}
+
+async function carregarTotalParticipantes() {
+    const { count, error } = await supabase.from('participantes').select('*', { count: 'exact', head: true });
+    if (!error) {
+        document.getElementById('contadorParticipantes').textContent = count || 0;
+        document.getElementById('contadorParticipantesLocal').textContent = count || 0;
+    }
+}
+
+// ==================== COMENTÁRIOS GLOBAIS ====================
+async function carregarComentarios() {
+    const { data, error } = await supabase.from('comentarios_anonimos').select('texto, created_at').order('created_at', { ascending: false }).limit(50);
+    const area = document.getElementById('areaMensagens');
+    if (error || !data || data.length === 0) { area.innerHTML = '<div style="color:#6c6f6b; text-align:center; padding:20px;">Nenhum comentário ainda. Seja o primeiro.</div>'; return; }
+    area.innerHTML = data.map(msg => `<div class="mensagem-item">📝 ${escapeHtml(msg.texto)}<div class="mensagem-data">${new Date(msg.created_at).toLocaleString()}</div></div>`).join('');
+}
+
+async function enviarComentario(texto) {
+    if (!texto.trim()) return false;
+    const { error } = await supabase.from('comentarios_anonimos').insert({ texto: texto.trim(), sessao_hash: sessaoHash });
+    if (error) { console.error(error); return false; }
+    return true;
+}
+
+function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+
+// ==================== ADMIN (você vê quem participou) ====================
+async function carregarListaParticipantesAdmin() {
+    const { data, error } = await supabase.from('participantes').select('sessao_hash, created_at').order('created_at', { ascending: false });
+    if (error) { console.error(error); return; }
+    const listaDiv = document.getElementById('listaParticipantesAdmin');
+    listaDiv.innerHTML = data.map(p => `<div style="border-bottom:1px solid #e7e5e4; padding:4px;">🕯️ ${p.sessao_hash.substring(0, 20)}... - ${new Date(p.created_at).toLocaleDateString()}</div>`).join('');
+    if (data.length === 0) listaDiv.innerHTML = '<div>Nenhum participante registrado ainda.</div>';
+}
+
+// ==================== INICIALIZAÇÃO ====================
+async function init() {
+    await carregarMarcacoesGlobais();
+    await carregarTotalParticipantes();
+    await carregarComentarios();
+    const participou = localStorage.getItem('jornaleiro_participou') === 'true';
+    if (participou) { usuarioJaParticipou = true; document.getElementById('jaParticipouMsg').style.display = 'block'; document.getElementById('btnParticipar').disabled = true; }
+}
+
+document.getElementById('btnParticipar').addEventListener('click', registrarParticipacao);
+document.getElementById('btnEnviarMsg').addEventListener('click', async () => {
+    const texto = document.getElementById('msgAnonimo').value.trim();
+    if (!texto) { alert('Escreva uma mensagem.'); return; }
+    if (texto.length > 500) { alert('Máximo 500 caracteres.'); return; }
+    const success = await enviarComentario(texto);
+    if (success) { document.getElementById('msgAnonimo').value = ''; await carregarComentarios(); alert('✅ Comentário enviado anonimamente!'); }
+    else alert('❌ Erro ao enviar.');
+});
+
+// Admin login
+let adminLogado = false;
+document.getElementById('btnAdminLogin').addEventListener('click', () => {
+    const senha = prompt('Digite a senha de administrador:');
+    if (senha === ADMIN_SENHA) {
+        adminLogado = true;
+        document.getElementById('adminSection').style.display = 'block';
+        carregarListaParticipantesAdmin();
+        document.getElementById('btnRefreshAdmin').onclick = carregarListaParticipantesAdmin;
+        alert('Acesso concedido. Você pode ver a lista de participantes (apenas hashes anônimos).');
+    }
