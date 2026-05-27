@@ -225,305 +225,308 @@
 </div>
 
 <script>
-// ==================== CONFIGURAÇÃO SUPABASE ====================
-const SUPABASE_URL = "https://rnfcvbagandagcvwmiqp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJuZmljdmJxYW5kYWdjdm13aXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MDE2MzgsImV4cCI6MjA5NTQ3NzYzOH0.Pd-JPnm0JcTi8-Unsw4nK1JQl6QoupiTic5A-GaOfbo";
+(function() {
+    // ==================== CONFIGURAÇÃO SUPABASE ====================
+    const SUPABASE_URL = "https://rnfcvbagandagcvwmiqp.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJuZmljdmJxYW5kYWdjdm13aXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MDE2MzgsImV4cCI6MjA5NTQ3NzYzOH0.Pd-JPnm0JcTi8-Unsw4nK1JQl6QoupiTic5A-GaOfbo";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let usuarioAtual = null;
 
-let usuarioAtual = null;
-
-// ==================== AUTENTICAÇÃO ====================
-async function cadastrarOuEntrar() {
-    const nickname = document.getElementById('nicknameInput').value.trim();
-    const senha = document.getElementById('senhaInput').value;
-    
-    if (!nickname || !senha) {
-        document.getElementById('msgCadastro').innerHTML = '❌ Preencha nickname e senha';
-        return;
-    }
-    
-    const nickRegex = /^[a-zA-Z0-9_áéíóúãõçÁÉÍÓÚÃÕÇ]{3,30}$/;
-    if (!nickRegex.test(nickname)) {
-        document.getElementById('msgCadastro').innerHTML = '❌ Nickname deve ter 3-30 letras/números. Sem espaços.';
-        return;
-    }
-    
-    const { data: existing } = await supabase
-        .from('participantes')
-        .select('id, nickname, senha_hash')
-        .eq('nickname', nickname)
-        .maybeSingle();
-    
-    if (existing) {
-        if (existing.senha_hash === senha) {
-            usuarioAtual = { id: existing.id, nickname: existing.nickname };
-            localStorage.setItem('jornaleiro_usuario_id', usuarioAtual.id);
-            localStorage.setItem('jornaleiro_nickname', usuarioAtual.nickname);
-            document.getElementById('msgCadastro').innerHTML = '✅ Login realizado!';
-            await carregarInterfaceLogada();
-        } else {
-            document.getElementById('msgCadastro').innerHTML = '❌ Senha incorreta';
+    // ==================== AUTENTICAÇÃO ====================
+    async function cadastrarOuEntrar() {
+        const nickname = document.getElementById('nicknameInput').value.trim();
+        const senha = document.getElementById('senhaInput').value;
+        
+        if (!nickname || !senha) {
+            document.getElementById('msgCadastro').innerHTML = '❌ Preencha nickname e senha';
+            return;
         }
-    } else {
-        const { data: newUser, error: insertError } = await supabase
+        
+        const nickRegex = /^[a-zA-Z0-9_áéíóúãõçÁÉÍÓÚÃÕÇ]{3,30}$/;
+        if (!nickRegex.test(nickname)) {
+            document.getElementById('msgCadastro').innerHTML = '❌ Nickname deve ter 3-30 letras/números. Sem espaços.';
+            return;
+        }
+        
+        const { data: existing } = await supabaseClient
             .from('participantes')
-            .insert({ nickname: nickname, senha_hash: senha })
-            .select()
-            .single();
+            .select('id, nickname, senha_hash')
+            .eq('nickname', nickname)
+            .maybeSingle();
         
-        if (insertError) {
-            document.getElementById('msgCadastro').innerHTML = '❌ Nickname já existe. Escolha outro.';
-        } else {
-            usuarioAtual = { id: newUser.id, nickname: newUser.nickname };
-            localStorage.setItem('jornaleiro_usuario_id', usuarioAtual.id);
-            localStorage.setItem('jornaleiro_nickname', usuarioAtual.nickname);
-            document.getElementById('msgCadastro').innerHTML = '✅ Cadastro realizado!';
-            await carregarInterfaceLogada();
-        }
-    }
-}
-
-async function carregarInterfaceLogada() {
-    document.getElementById('secaoCadastro').style.display = 'none';
-    document.getElementById('dividerArea').style.display = 'block';
-    document.getElementById('secaoPresenca').style.display = 'block';
-    document.getElementById('secaoCalendario').style.display = 'block';
-    document.getElementById('secaoEscreverOracao').style.display = 'block';
-    
-    await carregarMuralPresenca();
-    await carregarCalendarioPessoal();
-}
-
-// ==================== MURAL DE PRESENÇA ====================
-async function carregarMuralPresenca() {
-    const { data: participantes } = await supabase
-        .from('participantes')
-        .select('id, nickname')
-        .order('nickname');
-    
-    const hoje = new Date();
-    const diasAteTerca = (2 - hoje.getDay() + 7) % 7;
-    const ultimaTerca = new Date(hoje);
-    ultimaTerca.setDate(hoje.getDate() - diasAteTerca);
-    ultimaTerca.setHours(0,0,0,0);
-    const dataRef = ultimaTerca.toISOString().split('T')[0];
-    
-    const { data: presencas } = await supabase
-        .from('presenca')
-        .select('participante_id')
-        .eq('semana', dataRef);
-    
-    const marcados = new Set(presencas?.map(p => p.participante_id) || []);
-    
-    const tbody = document.getElementById('listaPresenca');
-    tbody.innerHTML = '';
-    
-    for (const p of participantes) {
-        const marcou = marcados.has(p.id);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="nickname-cell">${escapeHtml(p.nickname)}</td>
-            <td class="${marcou ? 'status-marcado' : 'status-pendente'}">${marcou ? '✅ Marcou' : '⬜ Pendente'}</td>
-            <td>${usuarioAtual.id === p.id ? (marcou ? '<button disabled class="btn">✅ Já marcou</button>' : `<button onclick="marcarPresenca('${dataRef}')" class="btn btn-primary">🙏 Marcar presença</button>`) : ''}</td>
-        `;
-        tbody.appendChild(tr);
-    }
-    
-    const usuarioMarcou = marcados.has(usuarioAtual.id);
-    document.getElementById('seuStatusMsg').innerHTML = usuarioMarcou 
-        ? '✅ Você já marcou presença nesta terça-feira. Obrigado por jejuar e orar!' 
-        : '⚠️ Você ainda não marcou presença. Clique no botão ao lado do seu nickname.';
-}
-
-async function marcarPresenca(dataRef) {
-    const { error } = await supabase
-        .from('presenca')
-        .insert({ participante_id: usuarioAtual.id, semana: dataRef });
-    
-    if (error && error.code !== '23505') {
-        alert('Erro: ' + error.message);
-    } else {
-        await carregarMuralPresenca();
-        alert('✅ Presença marcada!');
-    }
-}
-
-// ==================== CALENDÁRIO PESSOAL ====================
-const totalDias = 384;
-let diasMarcados = new Set();
-
-function loadProgresso() {
-    const saved = localStorage.getItem(`jornaleiro_marcados_${usuarioAtual.id}`);
-    if (saved) diasMarcados = new Set(JSON.parse(saved));
-    else { diasMarcados.add("2026-05-19"); diasMarcados.add("2026-05-26"); }
-}
-function saveProgresso() { 
-    localStorage.setItem(`jornaleiro_marcados_${usuarioAtual.id}`, JSON.stringify([...diasMarcados])); 
-}
-function toggleDia(dateStr, element) { 
-    if (diasMarcados.has(dateStr)) { 
-        diasMarcados.delete(dateStr); 
-        element.classList.remove('marked'); 
-    } else { 
-        diasMarcados.add(dateStr); 
-        element.classList.add('marked'); 
-    } 
-    saveProgresso(); 
-}
-
-const meses = [
-    { nome: "MAIO 2026", dias: 31, inicioSemana: 5, eventos: { 19: "☑️ Terça", 21: "🕯️ Início Shavuot", 23: "🕯️ Fim Shavuot ⭐", 26: "☑️ Terça" } },
-    { nome: "JUNHO 2026", dias: 30, inicioSemana: 1, eventos: { 2: "☑️ Terça", 9: "☑️ Terça", 16: "☑️ Terça", 23: "☑️ Terça", 30: "☑️ Terça" } },
-    { nome: "JULHO 2026", dias: 31, inicioSemana: 3, eventos: { 4: "⭐", 7: "☑️ Terça", 11: "⭐", 14: "☑️ Terça", 18: "⭐", 21: "☑️ Terça", 22: "🕯️ Tisha B'Av", 23: "🕯️ Tisha B'Av", 25: "⭐", 28: "☑️ Terça" } },
-    { nome: "AGOSTO 2026", dias: 31, inicioSemana: 6, eventos: { 1: "⭐", 4: "☑️ Terça", 8: "⭐", 11: "☑️ Terça", 15: "⭐", 18: "☑️ Terça", 22: "⭐", 25: "☑️ Terça", 29: "⭐" } },
-    { nome: "SETEMBRO 2026", dias: 30, inicioSemana: 2, eventos: { 1: "☑️ Terça", 5: "⭐", 8: "☑️ Terça", 11: "🕯️ Início Rosh Hashaná", 13: "🕯️ Fim Rosh Hashaná", 15: "☑️ Terça", 19: "⭐", 20: "🕯️ Yom Kippur", 21: "🕯️ Yom Kippur", 22: "☑️ Terça", 25: "🕯️ Início Sucot ⭐", 30: "🕯️ Fim Sucot", 29: "☑️ Terça" } },
-    { nome: "OUTUBRO 2026", dias: 31, inicioSemana: 4, eventos: { 1: "🕯️ Sucot", 2: "🕯️ Shemini Atzeret ⭐", 3: "🕯️ Simchat Torá", 4: "⭐", 6: "☑️ Terça", 10: "⭐", 13: "☑️ Terça", 17: "⭐", 20: "☑️ Terça", 24: "⭐", 27: "☑️ Terça", 31: "⭐" } },
-    { nome: "NOVEMBRO 2026", dias: 30, inicioSemana: 0, eventos: { 3: "☑️ Terça", 7: "⭐", 10: "☑️ Terça", 14: "⭐", 17: "☑️ Terça", 21: "⭐", 24: "☑️ Terça", 28: "⭐" } },
-    { nome: "DEZEMBRO 2026", dias: 31, inicioSemana: 2, eventos: { 1: "☑️ Terça", 4: "🕯️ Início Chanucá ⭐", 12: "🕯️ Fim Chanucá ⭐", 8: "☑️ Terça", 15: "☑️ Terça", 19: "⭐", 22: "☑️ Terça", 26: "⭐", 29: "☑️ Terça" } },
-    { nome: "JANEIRO 2027", dias: 31, inicioSemana: 5, eventos: { 2: "⭐", 5: "☑️ Terça", 9: "⭐", 12: "☑️ Terça", 16: "⭐", 19: "☑️ Terça", 22: "🕯️ Tu BiShvat", 23: "🕯️ Tu BiShvat ⭐", 26: "☑️ Terça", 30: "⭐" } },
-    { nome: "FEVEREIRO 2027", dias: 28, inicioSemana: 1, eventos: { 2: "☑️ Terça", 6: "⭐", 9: "☑️ Terça", 13: "⭐", 16: "☑️ Terça", 20: "⭐", 23: "☑️ Terça", 27: "⭐" } },
-    { nome: "MARÇO 2027", dias: 31, inicioSemana: 1, eventos: { 2: "☑️ Terça", 6: "⭐", 9: "☑️ Terça", 13: "⭐", 16: "☑️ Terça", 20: "⭐", 22: "🕯️ Início Purim", 23: "🕯️ Fim Purim + ☑️ Terça", 27: "⭐", 30: "☑️ Terça" } },
-    { nome: "ABRIL 2027", dias: 30, inicioSemana: 4, eventos: { 3: "⭐", 6: "☑️ Terça", 10: "⭐", 13: "☑️ Terça", 17: "⭐", 20: "☑️ Terça", 21: "🕯️ Início Pêssach", 28: "🕯️ Fim Pêssach + ☑️ Terça" } },
-    { nome: "MAIO 2027", dias: 31, inicioSemana: 6, eventos: { 1: "⭐", 4: "☑️ Terça", 8: "⭐", 11: "☑️ Terça", 15: "⭐", 18: "☑️ Terça", 22: "⭐", 24: "🕯️ Início Lag BaOmer", 25: "🕯️ Fim Lag BaOmer + ☑️ Terça", 29: "⭐" } },
-    { nome: "JUNHO 2027", dias: 10, inicioSemana: 2, eventos: { 1: "☑️ Terça", 5: "⭐", 8: "☑️ Terça", 10: "🕯️ Shavuot", 11: "⭐" } }
-];
-
-async function carregarCalendarioPessoal() {
-    loadProgresso();
-    const container = document.getElementById('calendar');
-    container.innerHTML = '';
-    
-    for (let mi=0; mi<meses.length; mi++) {
-        const m = meses[mi];
-        const card = document.createElement('div'); card.className = 'month-card';
-        const header = document.createElement('div'); header.className = 'month-header';
-        header.innerHTML = `📅 ${m.nome} <span style="float:right;">▼</span>`;
-        header.onclick = () => card.classList.toggle('open');
-        const grid = document.createElement('div'); grid.className = 'month-days';
-        
-        ['D','S','T','Q','Q','S','S'].forEach(d => { 
-            let dDiv = document.createElement('div'); 
-            dDiv.textContent = d; 
-            dDiv.style.fontWeight = 'bold'; 
-            dDiv.style.color = '#b45309'; 
-            dDiv.style.textAlign = 'center';
-            grid.appendChild(dDiv); 
-        });
-        
-        for (let i=0; i<m.inicioSemana; i++) { 
-            let e = document.createElement('div'); 
-            grid.appendChild(e); 
-        }
-        
-        for (let d=1; d<=m.dias; d++) {
-            let dataStr = `2026-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            if (mi>=12) dataStr = `2027-${String(mi-11).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const ev = m.eventos[d] || '';
-            const isMarked = diasMarcados.has(dataStr);
-            const dayDiv = document.createElement('div'); dayDiv.className = 'day-cell';
-            if (isMarked) dayDiv.classList.add('marked');
-            if (ev.includes('☑️') || ev.includes('Terça')) dayDiv.classList.add('tuesday');
-            if (ev.includes('🕯️')) dayDiv.classList.add('festa');
-            if (ev.includes('⭐')) dayDiv.classList.add('shabbat');
-            
-            const numSpan = document.createElement('span'); numSpan.className = 'day-number'; 
-            numSpan.textContent = d;
-            dayDiv.appendChild(numSpan);
-            if (ev) { 
-                let evSpan = document.createElement('span'); 
-                evSpan.className = 'day-event'; 
-                evSpan.textContent = ev.replace('⭐','').trim(); 
-                dayDiv.appendChild(evSpan); 
+        if (existing) {
+            if (existing.senha_hash === senha) {
+                usuarioAtual = { id: existing.id, nickname: existing.nickname };
+                localStorage.setItem('jornaleiro_usuario_id', usuarioAtual.id);
+                localStorage.setItem('jornaleiro_nickname', usuarioAtual.nickname);
+                document.getElementById('msgCadastro').innerHTML = '✅ Login realizado!';
+                await carregarInterfaceLogada();
+            } else {
+                document.getElementById('msgCadastro').innerHTML = '❌ Senha incorreta';
             }
-            dayDiv.onclick = (function(ds, el) { return () => toggleDia(ds, el); })(dataStr, dayDiv);
-            grid.appendChild(dayDiv);
+        } else {
+            const { data: newUser, error: insertError } = await supabaseClient
+                .from('participantes')
+                .insert({ nickname: nickname, senha_hash: senha })
+                .select()
+                .single();
+            
+            if (insertError) {
+                document.getElementById('msgCadastro').innerHTML = '❌ Nickname já existe. Escolha outro.';
+            } else {
+                usuarioAtual = { id: newUser.id, nickname: newUser.nickname };
+                localStorage.setItem('jornaleiro_usuario_id', usuarioAtual.id);
+                localStorage.setItem('jornaleiro_nickname', usuarioAtual.nickname);
+                document.getElementById('msgCadastro').innerHTML = '✅ Cadastro realizado!';
+                await carregarInterfaceLogada();
+            }
         }
-        card.appendChild(header); 
-        card.appendChild(grid); 
-        container.appendChild(card);
     }
-    
-    // Abrir mês atual
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
-    let indexMesAtual = -1;
-    for (let i=0; i<meses.length; i++) {
-        const nomeMes = meses[i].nome;
-        if (nomeMes.includes("2026") && anoAtual === 2026 && mesAtual === parseInt(nomeMes.split(" ")[0])) indexMesAtual = i;
-        if (nomeMes.includes("2027") && anoAtual === 2027 && mesAtual === parseInt(nomeMes.split(" ")[0])) indexMesAtual = i;
-    }
-    if (indexMesAtual >= 0 && document.querySelectorAll('.month-card')[indexMesAtual]) {
-        document.querySelectorAll('.month-card')[indexMesAtual].classList.add('open');
-    } else if (document.querySelector('.month-card')) {
-        document.querySelector('.month-card').classList.add('open');
-    }
-}
 
-// ==================== COMENTÁRIOS ====================
-async function carregarComentarios() {
-    const { data, error } = await supabase
-        .from('comentarios_anonimos')
-        .select('texto, created_at')
-        .order('created_at', { ascending: false })
-        .limit(50);
-    
-    const area = document.getElementById('areaMensagens');
-    if (error || !data || data.length === 0) {
-        area.innerHTML = '<div style="text-align:center; padding:20px;">🙏 Nenhuma oração compartilhada ainda. Seja o primeiro.</div>';
-        return;
+    async function carregarInterfaceLogada() {
+        document.getElementById('secaoCadastro').style.display = 'none';
+        document.getElementById('dividerArea').style.display = 'block';
+        document.getElementById('secaoPresenca').style.display = 'block';
+        document.getElementById('secaoCalendario').style.display = 'block';
+        document.getElementById('secaoEscreverOracao').style.display = 'block';
+        
+        await carregarMuralPresenca();
+        await carregarCalendarioPessoal();
     }
-    area.innerHTML = data.map(msg => `
-        <div class="comentario-item">
-            📝 ${escapeHtml(msg.texto)}
-            <div class="comentario-data">${new Date(msg.created_at).toLocaleString()}</div>
-        </div>
-    `).join('');
-}
 
-async function enviarComentario(texto) {
-    const { error } = await supabase.from('comentarios_anonimos').insert({ texto: texto.trim() });
-    if (error) { 
-        alert('Erro: ' + error.message); 
-        return false; 
+    // ==================== MURAL DE PRESENÇA ====================
+    async function carregarMuralPresenca() {
+        const { data: participantes } = await supabaseClient
+            .from('participantes')
+            .select('id, nickname')
+            .order('nickname');
+        
+        const hoje = new Date();
+        const diasAteTerca = (2 - hoje.getDay() + 7) % 7;
+        const ultimaTerca = new Date(hoje);
+        ultimaTerca.setDate(hoje.getDate() - diasAteTerca);
+        ultimaTerca.setHours(0,0,0,0);
+        const dataRef = ultimaTerca.toISOString().split('T')[0];
+        
+        const { data: presencas } = await supabaseClient
+            .from('presenca')
+            .select('participante_id')
+            .eq('semana', dataRef);
+        
+        const marcados = new Set(presencas?.map(p => p.participante_id) || []);
+        
+        const tbody = document.getElementById('listaPresenca');
+        tbody.innerHTML = '';
+        
+        for (const p of participantes || []) {
+            const marcou = marcados.has(p.id);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="nickname-cell">${escapeHtml(p.nickname)}</td>
+                <td class="${marcou ? 'status-marcado' : 'status-pendente'}">${marcou ? '✅ Marcou' : '⬜ Pendente'}</td>
+                <td>${usuarioAtual.id === p.id ? (marcou ? '<button disabled class="btn">✅ Já marcou</button>' : `<button onclick="window.marcarPresencaGlobal('${dataRef}')" class="btn btn-primary">🙏 Marcar presença</button>`) : ''}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+        
+        const usuarioMarcou = marcados.has(usuarioAtual.id);
+        document.getElementById('seuStatusMsg').innerHTML = usuarioMarcou 
+            ? '✅ Você já marcou presença nesta terça-feira. Obrigado por jejuar e orar!' 
+            : '⚠️ Você ainda não marcou presença. Clique no botão ao lado do seu nickname.';
     }
-    return true;
-}
 
-function escapeHtml(text) { 
-    const div = document.createElement('div'); 
-    div.textContent = text; 
-    return div.innerHTML; 
-}
+    window.marcarPresencaGlobal = async function(dataRef) {
+        const { error } = await supabaseClient
+            .from('presenca')
+            .insert({ participante_id: usuarioAtual.id, semana: dataRef });
+        
+        if (error && error.code !== '23505') {
+            alert('Erro: ' + error.message);
+        } else {
+            await carregarMuralPresenca();
+            alert('✅ Presença marcada!');
+        }
+    };
 
-// ==================== INICIALIZAÇÃO ====================
-document.getElementById('btnCadastrar').addEventListener('click', cadastrarOuEntrar);
-document.getElementById('btnEnviarMsg').addEventListener('click', async () => {
-    if (!usuarioAtual) {
-        alert('Faça login para escrever no mural.');
-        return;
+    // ==================== CALENDÁRIO PESSOAL ====================
+    let diasMarcados = new Set();
+
+    function loadProgresso() {
+        const saved = localStorage.getItem(`jornaleiro_marcados_${usuarioAtual.id}`);
+        if (saved) diasMarcados = new Set(JSON.parse(saved));
+        else { diasMarcados.add("2026-05-19"); diasMarcados.add("2026-05-26"); }
     }
-    const texto = document.getElementById('msgAnonimo').value.trim();
-    if (!texto) { alert('Escreva uma mensagem.'); return; }
-    if (texto.length > 500) { alert('Máximo 500 caracteres.'); return; }
-    if (await enviarComentario(texto)) {
-        document.getElementById('msgAnonimo').value = '';
-        await carregarComentarios();
-        alert('✅ Oração enviada!');
+    function saveProgresso() { 
+        localStorage.setItem(`jornaleiro_marcados_${usuarioAtual.id}`, JSON.stringify([...diasMarcados])); 
     }
-});
+    function toggleDia(dateStr, element) { 
+        if (diasMarcados.has(dateStr)) { 
+            diasMarcados.delete(dateStr); 
+            element.classList.remove('marked'); 
+        } else { 
+            diasMarcados.add(dateStr); 
+            element.classList.add('marked'); 
+        } 
+        saveProgresso(); 
+    }
 
-// Carregar comentários públicos
-carregarComentarios();
+    const meses = [
+        { nome: "MAIO 2026", dias: 31, inicioSemana: 5, eventos: { 19: "☑️ Terça", 21: "🕯️ Início Shavuot", 23: "🕯️ Fim Shavuot ⭐", 26: "☑️ Terça" } },
+        { nome: "JUNHO 2026", dias: 30, inicioSemana: 1, eventos: { 2: "☑️ Terça", 9: "☑️ Terça", 16: "☑️ Terça", 23: "☑️ Terça", 30: "☑️ Terça" } },
+        { nome: "JULHO 2026", dias: 31, inicioSemana: 3, eventos: { 4: "⭐", 7: "☑️ Terça", 11: "⭐", 14: "☑️ Terça", 18: "⭐", 21: "☑️ Terça", 22: "🕯️ Tisha B'Av", 23: "🕯️ Tisha B'Av", 25: "⭐", 28: "☑️ Terça" } },
+        { nome: "AGOSTO 2026", dias: 31, inicioSemana: 6, eventos: { 1: "⭐", 4: "☑️ Terça", 8: "⭐", 11: "☑️ Terça", 15: "⭐", 18: "☑️ Terça", 22: "⭐", 25: "☑️ Terça", 29: "⭐" } },
+        { nome: "SETEMBRO 2026", dias: 30, inicioSemana: 2, eventos: { 1: "☑️ Terça", 5: "⭐", 8: "☑️ Terça", 11: "🕯️ Início Rosh Hashaná", 13: "🕯️ Fim Rosh Hashaná", 15: "☑️ Terça", 19: "⭐", 20: "🕯️ Yom Kippur", 21: "🕯️ Yom Kippur", 22: "☑️ Terça", 25: "🕯️ Início Sucot ⭐", 30: "🕯️ Fim Sucot", 29: "☑️ Terça" } },
+        { nome: "OUTUBRO 2026", dias: 31, inicioSemana: 4, eventos: { 1: "🕯️ Sucot", 2: "🕯️ Shemini Atzeret ⭐", 3: "🕯️ Simchat Torá", 4: "⭐", 6: "☑️ Terça", 10: "⭐", 13: "☑️ Terça", 17: "⭐", 20: "☑️ Terça", 24: "⭐", 27: "☑️ Terça", 31: "⭐" } },
+        { nome: "NOVEMBRO 2026", dias: 30, inicioSemana: 0, eventos: { 3: "☑️ Terça", 7: "⭐", 10: "☑️ Terça", 14: "⭐", 17: "☑️ Terça", 21: "⭐", 24: "☑️ Terça", 28: "⭐" } },
+        { nome: "DEZEMBRO 2026", dias: 31, inicioSemana: 2, eventos: { 1: "☑️ Terça", 4: "🕯️ Início Chanucá ⭐", 12: "🕯️ Fim Chanucá ⭐", 8: "☑️ Terça", 15: "☑️ Terça", 19: "⭐", 22: "☑️ Terça", 26: "⭐", 29: "☑️ Terça" } },
+        { nome: "JANEIRO 2027", dias: 31, inicioSemana: 5, eventos: { 2: "⭐", 5: "☑️ Terça", 9: "⭐", 12: "☑️ Terça", 16: "⭐", 19: "☑️ Terça", 22: "🕯️ Tu BiShvat", 23: "🕯️ Tu BiShvat ⭐", 26: "☑️ Terça", 30: "⭐" } },
+        { nome: "FEVEREIRO 2027", dias: 28, inicioSemana: 1, eventos: { 2: "☑️ Terça", 6: "⭐", 9: "☑️ Terça", 13: "⭐", 16: "☑️ Terça", 20: "⭐", 23: "☑️ Terça", 27: "⭐" } },
+        { nome: "MARÇO 2027", dias: 31, inicioSemana: 1, eventos: { 2: "☑️ Terça", 6: "⭐", 9: "☑️ Terça", 13: "⭐", 16: "☑️ Terça", 20: "⭐", 22: "🕯️ Início Purim", 23: "🕯️ Fim Purim + ☑️ Terça", 27: "⭐", 30: "☑️ Terça" } },
+        { nome: "ABRIL 2027", dias: 30, inicioSemana: 4, eventos: { 3: "⭐", 6: "☑️ Terça", 10: "⭐", 13: "☑️ Terça", 17: "⭐", 20: "☑️ Terça", 21: "🕯️ Início Pêssach", 28: "🕯️ Fim Pêssach + ☑️ Terça" } },
+        { nome: "MAIO 2027", dias: 31, inicioSemana: 6, eventos: { 1: "⭐", 4: "☑️ Terça", 8: "⭐", 11: "☑️ Terça", 15: "⭐", 18: "☑️ Terça", 22: "⭐", 24: "🕯️ Início Lag BaOmer", 25: "🕯️ Fim Lag BaOmer + ☑️ Terça", 29: "⭐" } },
+        { nome: "JUNHO 2027", dias: 10, inicioSemana: 2, eventos: { 1: "☑️ Terça", 5: "⭐", 8: "☑️ Terça", 10: "🕯️ Shavuot", 11: "⭐" } }
+    ];
 
-// Verificar login salvo
-const savedId = localStorage.getItem('jornaleiro_usuario_id');
-const savedNick = localStorage.getItem('jornaleiro_nickname');
-if (savedId && savedNick) {
-    usuarioAtual = { id: parseInt(savedId), nickname: savedNick };
-    carregarInterfaceLogada();
-}
+    async function carregarCalendarioPessoal() {
+        loadProgresso();
+        const container = document.getElementById('calendar');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        for (let mi=0; mi<meses.length; mi++) {
+            const m = meses[mi];
+            const card = document.createElement('div'); card.className = 'month-card';
+            const header = document.createElement('div'); header.className = 'month-header';
+            header.innerHTML = `📅 ${m.nome} <span style="float:right;">▼</span>`;
+            header.onclick = () => card.classList.toggle('open');
+            const grid = document.createElement('div'); grid.className = 'month-days';
+            
+            ['D','S','T','Q','Q','S','S'].forEach(d => { 
+                let dDiv = document.createElement('div'); 
+                dDiv.textContent = d; 
+                dDiv.style.fontWeight = 'bold'; 
+                dDiv.style.color = '#b45309'; 
+                dDiv.style.textAlign = 'center';
+                grid.appendChild(dDiv); 
+            });
+            
+            for (let i=0; i<m.inicioSemana; i++) { 
+                let e = document.createElement('div'); 
+                grid.appendChild(e); 
+            }
+            
+            for (let d=1; d<=m.dias; d++) {
+                let dataStr = `2026-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                if (mi>=12) dataStr = `2027-${String(mi-11).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const ev = m.eventos[d] || '';
+                const isMarked = diasMarcados.has(dataStr);
+                const dayDiv = document.createElement('div'); dayDiv.className = 'day-cell';
+                if (isMarked) dayDiv.classList.add('marked');
+                if (ev.includes('☑️') || ev.includes('Terça')) dayDiv.classList.add('tuesday');
+                if (ev.includes('🕯️')) dayDiv.classList.add('festa');
+                if (ev.includes('⭐')) dayDiv.classList.add('shabbat');
+                
+                const numSpan = document.createElement('span'); numSpan.className = 'day-number'; 
+                numSpan.textContent = d;
+                dayDiv.appendChild(numSpan);
+                if (ev) { 
+                    let evSpan = document.createElement('span'); 
+                    evSpan.className = 'day-event'; 
+                    evSpan.textContent = ev.replace('⭐','').trim(); 
+                    dayDiv.appendChild(evSpan); 
+                }
+                dayDiv.onclick = (function(ds, el) { return () => toggleDia(ds, el); })(dataStr, dayDiv);
+                grid.appendChild(dayDiv);
+            }
+            card.appendChild(header); 
+            card.appendChild(grid); 
+            container.appendChild(card);
+        }
+        
+        // Abrir mês atual
+        const hoje = new Date();
+        const mesAtual = hoje.getMonth();
+        const anoAtual = hoje.getFullYear();
+        let indexMesAtual = -1;
+        for (let i=0; i<meses.length; i++) {
+            const nomeMes = meses[i].nome;
+            const mesNum = parseInt(nomeMes.split(" ")[0]);
+            if (nomeMes.includes("2026") && anoAtual === 2026 && mesAtual === mesNum) indexMesAtual = i;
+            if (nomeMes.includes("2027") && anoAtual === 2027 && mesAtual === mesNum) indexMesAtual = i;
+        }
+        const cards = document.querySelectorAll('.month-card');
+        if (indexMesAtual >= 0 && cards[indexMesAtual]) {
+            cards[indexMesAtual].classList.add('open');
+        } else if (cards[0]) {
+            cards[0].classList.add('open');
+        }
+    }
+
+    // ==================== COMENTÁRIOS ====================
+    async function carregarComentarios() {
+        const { data, error } = await supabaseClient
+            .from('comentarios_anonimos')
+            .select('texto, created_at')
+            .order('created_at', { ascending: false })
+            .limit(50);
+        
+        const area = document.getElementById('areaMensagens');
+        if (error || !data || data.length === 0) {
+            area.innerHTML = '<div style="text-align:center; padding:20px;">🙏 Nenhuma oração compartilhada ainda. Seja o primeiro.</div>';
+            return;
+        }
+        area.innerHTML = data.map(msg => `
+            <div class="comentario-item">
+                📝 ${escapeHtml(msg.texto)}
+                <div class="comentario-data">${new Date(msg.created_at).toLocaleString()}</div>
+            </div>
+        `).join('');
+    }
+
+    async function enviarComentario(texto) {
+        const { error } = await supabaseClient.from('comentarios_anonimos').insert({ texto: texto.trim() });
+        if (error) { 
+            alert('Erro: ' + error.message); 
+            return false; 
+        }
+        return true;
+    }
+
+    function escapeHtml(text) { 
+        const div = document.createElement('div'); 
+        div.textContent = text; 
+        return div.innerHTML; 
+    }
+
+    // ==================== INICIALIZAÇÃO ====================
+    document.getElementById('btnCadastrar').addEventListener('click', cadastrarOuEntrar);
+    document.getElementById('btnEnviarMsg').addEventListener('click', async () => {
+        if (!usuarioAtual) {
+            alert('Faça login para escrever no mural.');
+            return;
+        }
+        const texto = document.getElementById('msgAnonimo').value.trim();
+        if (!texto) { alert('Escreva uma mensagem.'); return; }
+        if (texto.length > 500) { alert('Máximo 500 caracteres.'); return; }
+        if (await enviarComentario(texto)) {
+            document.getElementById('msgAnonimo').value = '';
+            await carregarComentarios();
+            alert('✅ Oração enviada!');
+        }
+    });
+
+    // Carregar comentários públicos
+    carregarComentarios();
+
+    // Verificar login salvo
+    const savedId = localStorage.getItem('jornaleiro_usuario_id');
+    const savedNick = localStorage.getItem('jornaleiro_nickname');
+    if (savedId && savedNick) {
+        usuarioAtual = { id: parseInt(savedId), nickname: savedNick };
+        carregarInterfaceLogada();
+    }
+})();
 </script>
 </body>
 </html>
