@@ -12,48 +12,53 @@
             background: #f5f3ef;
             color: #1e2a2e;
             padding: 20px;
-            line-height: 1.4;
+            line-height: 1.5;
         }
         .container { max-width: 1200px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 24px; }
+        
+        .intro { text-align: center; margin-bottom: 30px; }
         h1 { font-size: 1.8rem; color: #b45309; margin-bottom: 8px; }
-        .versiculo { font-style: italic; color: #6c6f6b; font-size: 0.9rem; }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 24px;
+        .versiculo { font-style: italic; color: #6c6f6b; font-size: 0.9rem; margin-bottom: 16px; }
+        
+        .proposito {
+            background: #fff7ed;
+            padding: 20px;
+            border-radius: 28px;
+            margin-bottom: 20px;
+            border-left: 6px solid #b45309;
+            text-align: left;
         }
-        .stat-card {
+        .proposito h2 { color: #b45309; margin-bottom: 12px; font-size: 1.3rem; }
+        .proposito ul { margin-left: 20px; margin-top: 8px; }
+        .proposito li { margin: 8px 0; }
+        
+        .card-section {
             background: white;
-            padding: 12px 8px;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            border-radius: 28px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             border: 1px solid #e7e5e4;
         }
-        .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #b45309; }
-        .stat-value { font-size: 1.6rem; font-weight: bold; color: #2c3e2f; }
-        .progress-bar {
-            background: #e7e5e4;
-            border-radius: 30px;
-            height: 20px;
-            overflow: hidden;
-            margin-bottom: 24px;
+        .card-section h2 { color: #b45309; margin-bottom: 16px; font-size: 1.3rem; border-left: 4px solid #b45309; padding-left: 12px; }
+        .aviso { font-size: 0.7rem; color: #6c6f6b; margin-bottom: 16px; padding: 8px; background: #fef9f0; border-radius: 16px; }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 40px;
+            border: 1px solid #e7e5e4;
+            background: #fef9f0;
+            font-family: inherit;
+            font-size: 1rem;
+            margin-bottom: 12px;
         }
-        .progress-fill { background: #b45309; width: 0%; height: 100%; transition: width 0.2s; }
-        .controls {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
+        textarea { border-radius: 24px; resize: vertical; }
         .btn {
-            padding: 8px 18px;
+            padding: 10px 24px;
             border: none;
             border-radius: 40px;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             cursor: pointer;
             background: #e7e5e4;
             color: #1e2a2e;
@@ -61,227 +66,312 @@
         }
         .btn-primary { background: #b45309; color: white; }
         .btn-primary:hover { background: #9a3e06; }
-        .btn-secondary:hover { background: #d6d3d1; }
-        .legenda {
-            text-align: center;
-            font-size: 0.7rem;
-            color: #6c6f6b;
-            margin-bottom: 16px;
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
+        
+        .presenca-tabela {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
         }
-        .legenda span { display: inline-flex; align-items: center; gap: 4px; }
-        .calendar { display: flex; flex-direction: column; gap: 20px; }
-        .month-card {
-            background: white;
-            border-radius: 28px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            border: 1px solid #e7e5e4;
+        .presenca-tabela th, .presenca-tabela td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #e7e5e4;
         }
-        .month-header {
+        .presenca-tabela th {
             background: #2c3e2f;
             color: #fef3c7;
-            padding: 12px 16px;
-            font-weight: bold;
-            font-size: 1.2rem;
-            cursor: pointer;
         }
-        .month-days {
-            padding: 12px;
-            display: none;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-        }
+        .status-marcado { color: #2e7d32; font-weight: bold; }
+        .status-pendente { color: #b45309; }
+        .nickname-cell { font-weight: bold; color: #2c3e2f; }
+        
+        .calendar { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .month-card { background: white; border-radius: 24px; overflow: hidden; border: 1px solid #e7e5e4; }
+        .month-header { background: #2c3e2f; color: #fef3c7; padding: 12px 16px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        .month-header:hover { background: #3d5a40; }
+        .month-days { padding: 16px; display: none; grid-template-columns: repeat(7, 1fr); gap: 6px; }
         .month-card.open .month-days { display: grid; }
         .day-cell {
             background: #fef9f0;
             border-radius: 16px;
-            padding: 8px 4px;
+            padding: 10px 4px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.1s;
             font-size: 0.75rem;
             border: 1px solid #f0e7db;
-            position: relative;
+            transition: 0.1s;
         }
         .day-cell.marked { background: #b45309; color: white; border-color: #b45309; }
         .day-cell.tuesday { border: 2px solid #fbbf24; background: #fffbeb; }
-        .day-cell.tuesday.marked { background: #b45309; border: 2px solid #ffd966; }
         .day-cell.festa { background: #d97706; color: white; }
         .day-cell.shabbat { background: #4b5563; color: white; }
-        .day-cell.festa.marked, .day-cell.shabbat.marked { background: #b45309; outline: 2px solid #fbbf24; }
         .day-number { font-weight: bold; font-size: 1rem; }
-        .day-event { font-size: 0.6rem; display: block; white-space: normal; line-height: 1.2; }
-        .contador-marcacoes {
-            position: absolute;
-            bottom: 2px;
-            right: 4px;
-            font-size: 0.5rem;
-            background: rgba(0,0,0,0.5);
-            color: white;
-            border-radius: 10px;
-            padding: 0px 4px;
-        }
-        .card-section {
-            margin-top: 30px;
-            background: white;
-            border-radius: 28px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            border: 1px solid #e7e5e4;
-        }
-        .card-section h3 { color: #b45309; margin-bottom: 8px; }
-        .aviso-anonimo { font-size: 0.7rem; color: #6c6f6b; margin-bottom: 12px; }
-        textarea {
-            width: 100%;
-            padding: 12px;
-            border-radius: 20px;
-            border: 1px solid #e7e5e4;
-            background: #fef9f0;
-            font-family: inherit;
-            resize: vertical;
-        }
-        .btn-enviar {
-            margin-top: 8px;
-            background: #b45309;
-            color: white;
-            border: none;
-            border-radius: 40px;
-            padding: 8px 20px;
-            cursor: pointer;
-        }
-        .mensagem-item {
+        .day-event { font-size: 0.6rem; display: block; white-space: normal; line-height: 1.2; margin-top: 4px; }
+        
+        .comentario-item {
             background: #fff7ed;
             border-left: 4px solid #b45309;
             padding: 12px;
             border-radius: 16px;
-            font-size: 0.85rem;
             margin-bottom: 10px;
+            font-size: 0.85rem;
         }
-        .mensagem-data { font-size: 0.6rem; color: #b45309; margin-top: 6px; }
-        .participante-box {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-top: 10px;
-        }
-        .contador-grande {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #b45309;
-        }
-        /* Painel admin (oculto) */
-        .admin-panel {
-            display: none;
-            margin-top: 20px;
-            padding: 15px;
-            background: #fef3c7;
-            border-radius: 20px;
-            border: 1px solid #fbbf24;
-        }
-        .admin-panel.visible { display: block; }
+        .comentario-data { font-size: 0.6rem; color: #b45309; margin-top: 6px; }
+        
         footer {
             text-align: center;
-            margin-top: 32px;
+            margin-top: 40px;
+            padding-top: 20px;
             font-size: 0.7rem;
             color: #6c6f6b;
             border-top: 1px solid #e7e5e4;
-            padding-top: 20px;
         }
+        
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background: #e7e5e4;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            color: #2c3e2f;
+        }
+        
         @media (max-width: 650px) {
-            .stats { gap: 6px; }
-            .stat-value { font-size: 1.2rem; }
+            .presenca-tabela th, .presenca-tabela td { font-size: 0.7rem; padding: 8px 4px; }
             .day-number { font-size: 0.85rem; }
-            .day-event { font-size: 0.55rem; }
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <header>
+    <!-- INTRODUÇÃO PÚBLICA -->
+    <div class="intro">
         <h1>📆 Calendário do Jornaleiro</h1>
-        <div class="versiculo">“Dentro de um ano, conforme os anos de um jornaleiro…”<br>Isaías 21:16-17</div>
-    </header>
-
-    <div class="stats">
-        <div class="stat-card"><div class="stat-label">Início</div><div class="stat-value">16/05/2026 · 22h</div></div>
-        <div class="stat-card"><div class="stat-label">Total de dias</div><div class="stat-value">384</div></div>
-        <div class="stat-card"><div class="stat-label">Já contados (vcs)</div><div class="stat-value" id="totalMarcacoesGlobais">0</div></div>
-        <div class="stat-card"><div class="stat-label">Participantes</div><div class="stat-value" id="contadorParticipantes">0</div></div>
-    </div>
-
-    <div class="legenda">
-        <span>✅ Seu tique</span> <span>🔢 Total de tiques (todos)</span> <span>🕯️ Festa</span> <span>⭐ Sábado</span> <span>☑️ Terça</span>
-    </div>
-
-    <div id="calendar" class="calendar"></div>
-
-    <!-- SEÇÃO PARTICIPANTES -->
-    <div class="card-section">
-        <h3>🙋 Participantes do Propósito</h3>
-        <div class="aviso-anonimo">🔒 Clique em "Participei" para registrar seu compromisso. Apenas o total de pessoas é visível.</div>
-        <div class="participante-box">
-            <div style="text-align: center;">
-                <div class="contador-grande" id="contadorParticipantesLocal">0</div>
-                <div style="font-size: 0.75rem;">pessoas já disseram "sim"</div>
-            </div>
-            <button id="btnParticipar" class="btn-enviar" style="background: #b45309; padding: 12px 24px; font-size: 1.1rem;">
-                🙋 Participei (anônimo)
-            </button>
-        </div>
-        <div id="jaParticipouMsg" style="margin-top: 12px; font-size: 0.7rem; color: #4c9f70; display: none;">
-            ✅ Você já registrou sua participação neste propósito.
+        <div class="versiculo">"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</div>
+        
+        <div class="proposito">
+            <h2>🕯️ Propósito de Oração e Jejum</h2>
+            <p><strong>"Venha o Teu Reino, seja feita a Tua vontade..."</strong> (Mateus 6:10)</p>
+            <p>Este é um movimento silencioso. Sem grupos expostos, sem lista de nomes reais.</p>
+            <ul>
+                <li>✅ Jejum e oração <strong>toda terça-feira</strong></li>
+                <li>✅ Cada participante escolhe um <strong>nickname único</strong> (público)</li>
+                <li>✅ O mural de presença mostra <strong>quem marcou a terça</strong> (clicou no botão)</li>
+                <li>✅ Calendário pessoal: <strong>clique no dia em que orou/jejuou</strong></li>
+                <li>✅ Mural de orações anônimo (todos veem, só participantes escrevem)</li>
+            </ul>
+            <p><strong>🔒 Ninguém sabe sua identidade real. Apenas seu nickname.</strong></p>
         </div>
     </div>
 
-    <!-- SEÇÃO COMENTÁRIOS -->
-    <div class="card-section">
-        <h3>✍️ Mural de orações (anônimo - todos veem)</h3>
-        <div class="aviso-anonimo">🔒 Comentários são anônimos e visíveis para todos que estão no propósito.</div>
-        <textarea id="msgAnonimo" rows="3" placeholder="Escreva seu pedido de oração, testemunho ou palavra..."></textarea>
-        <button id="btnEnviarMsg" class="btn-enviar">📨 Enviar (anônimo)</button>
-        <div id="loadingMsg" style="font-size:0.7rem; color:#b45309; margin-top:8px;"></div>
-        <div id="areaMensagens" style="margin-top:20px; max-height: 400px; overflow-y: auto;"></div>
+    <!-- SEÇÃO DE CADASTRO / LOGIN (PÚBLICA) -->
+    <div class="card-section" id="secaoCadastro">
+        <h2>🙋 Entre ou crie seu nickname</h2>
+        <div class="aviso">🔒 Escolha um nickname único (ex: LeãoDeJudá, Serva, Vigia, Peregrino). Ele será público no mural de presença. Crie uma senha para acessar depois.</div>
+        <input type="text" id="nicknameInput" placeholder="Nickname (ex: LeãoDeJudá)" autocomplete="off">
+        <input type="password" id="senhaInput" placeholder="Senha">
+        <button id="btnCadastrar" class="btn btn-primary">📝 Entrar / Criar conta</button>
+        <div id="msgCadastro" style="font-size:0.75rem; margin-top:8px; color:#b45309;"></div>
     </div>
 
-    <!-- PAINEL ADMIN (oculto - só você vê com senha) -->
-    <div class="card-section" id="adminSection" style="display: none;">
-        <h3>👑 Painel do Administrador</h3>
-        <div id="listaParticipantesAdmin" style="font-size: 0.8rem; max-height: 200px; overflow-y: auto;"></div>
-        <button id="btnRefreshAdmin" class="btn-secondary" style="margin-top: 10px;">Atualizar</button>
+    <!-- MURAL DE ORAÇÕES (PÚBLICO - SÓ LEITURA) -->
+    <div class="card-section">
+        <h2>✍️ Mural de orações</h2>
+        <div class="aviso">🙏 Pedidos, testemunhos e palavras de fé. Para escrever, faça login com seu nickname.</div>
+        <div id="areaMensagens" style="max-height: 400px; overflow-y: auto;">
+            <div style="text-align:center; padding:20px;">Carregando mensagens...</div>
+        </div>
     </div>
-    <div style="text-align: center; margin-top: 10px;">
-        <button id="btnAdminLogin" class="btn-secondary" style="font-size: 0.7rem;">🔐 Acesso restrito</button>
+
+    <!-- DIVISÓRIA (APARECE SÓ APÓS LOGIN) -->
+    <div id="dividerArea" style="display: none;">
+        <div class="divider">🔐 Área dos participantes (login realizado)</div>
+    </div>
+
+    <!-- MURAL DE PRESENÇA (PRIVADO - APÓS LOGIN) -->
+    <div class="card-section" id="secaoPresenca" style="display: none;">
+        <h2>📋 Presença nesta terça-feira</h2>
+        <div class="aviso">✅ Clique em "Marcar presença" ao lado do seu nickname quando você orar/jejuar na terça.</div>
+        <div style="overflow-x: auto;">
+            <table class="presenca-tabela">
+                <thead>
+                    <tr><th>Nickname</th><th>Status</th><th>Ação</th></tr>
+                </thead>
+                <tbody id="listaPresenca"></tbody>
+            </table>
+        </div>
+        <div id="seuStatusMsg" style="margin-top:16px; padding:12px; background:#fff7ed; border-radius:16px; font-size:0.85rem;"></div>
+    </div>
+
+    <!-- CALENDÁRIO PESSOAL (PRIVADO - APÓS LOGIN) -->
+    <div class="card-section" id="secaoCalendario" style="display: none;">
+        <h2>📅 Seu calendário pessoal</h2>
+        <div class="aviso">Clique nos dias em que você orou/jejuou. Isso é apenas para você. O calendário segue os 384 dias do ano hebraico.</div>
+        <div id="calendar" class="calendar"></div>
+    </div>
+
+    <!-- FORMULÁRIO PARA ESCREVER ORAÇÃO (PRIVADO - APÓS LOGIN) -->
+    <div class="card-section" id="secaoEscreverOracao" style="display: none;">
+        <h2>✏️ Escrever no mural</h2>
+        <div class="aviso">Compartilhe um pedido de oração, testemunho ou palavra. Será anônimo (sem seu nickname).</div>
+        <textarea id="msgAnonimo" rows="3" placeholder="Escreva aqui..."></textarea>
+        <button id="btnEnviarMsg" class="btn btn-primary">📨 Enviar oração</button>
     </div>
 
     <footer>
-        <p>🙏 Cada terça-feira: jejum e oração. Clique nos dias para marcar.<br>Os números em cinza mostram quantas pessoas já marcaram cada dia.</p>
+        <p>🙏 Propósito de oração e jejum toda terça-feira. Marque presença e compartilhe orações.</p>
     </footer>
 </div>
 
 <script>
 // ==================== CONFIGURAÇÃO SUPABASE ====================
-// COLOQUE SUAS CREDENCIAIS AQUI:
-const SUPABASE_URL = "https://rnficvbqandagcvmwipq.supabase.co";
+const SUPABASE_URL = "https://rnfcvbagandagcvwmiqp.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJuZmljdmJxYW5kYWdjdm13aXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MDE2MzgsImV4cCI6MjA5NTQ3NzYzOH0.Pd-JPnm0JcTi8-Unsw4nK1JQl6QoupiTic5A-GaOfbo";
-// SENHA DO ADMIN (só você sabe)
-const ADMIN_SENHA = "yQ8NSXrPKyh0PUK9";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ==================== IDENTIFICADOR ÚNICO ANÔNIMO ====================
-let sessaoHash = localStorage.getItem('jornaleiro_sessao');
-if (!sessaoHash) {
-    sessaoHash = 'user_' + Math.random().toString(36) + Date.now().toString(36);
-    localStorage.setItem('jornaleiro_sessao', sessaoHash);
+let usuarioAtual = null;
+
+// ==================== AUTENTICAÇÃO ====================
+async function cadastrarOuEntrar() {
+    const nickname = document.getElementById('nicknameInput').value.trim();
+    const senha = document.getElementById('senhaInput').value;
+    
+    if (!nickname || !senha) {
+        document.getElementById('msgCadastro').innerHTML = '❌ Preencha nickname e senha';
+        return;
+    }
+    
+    const nickRegex = /^[a-zA-Z0-9_áéíóúãõçÁÉÍÓÚÃÕÇ]{3,30}$/;
+    if (!nickRegex.test(nickname)) {
+        document.getElementById('msgCadastro').innerHTML = '❌ Nickname deve ter 3-30 letras/números. Sem espaços.';
+        return;
+    }
+    
+    const { data: existing } = await supabase
+        .from('participantes')
+        .select('id, nickname, senha_hash')
+        .eq('nickname', nickname)
+        .maybeSingle();
+    
+    if (existing) {
+        if (existing.senha_hash === senha) {
+            usuarioAtual = { id: existing.id, nickname: existing.nickname };
+            localStorage.setItem('jornaleiro_usuario_id', usuarioAtual.id);
+            localStorage.setItem('jornaleiro_nickname', usuarioAtual.nickname);
+            document.getElementById('msgCadastro').innerHTML = '✅ Login realizado!';
+            await carregarInterfaceLogada();
+        } else {
+            document.getElementById('msgCadastro').innerHTML = '❌ Senha incorreta';
+        }
+    } else {
+        const { data: newUser, error: insertError } = await supabase
+            .from('participantes')
+            .insert({ nickname: nickname, senha_hash: senha })
+            .select()
+            .single();
+        
+        if (insertError) {
+            document.getElementById('msgCadastro').innerHTML = '❌ Nickname já existe. Escolha outro.';
+        } else {
+            usuarioAtual = { id: newUser.id, nickname: newUser.nickname };
+            localStorage.setItem('jornaleiro_usuario_id', usuarioAtual.id);
+            localStorage.setItem('jornaleiro_nickname', usuarioAtual.nickname);
+            document.getElementById('msgCadastro').innerHTML = '✅ Cadastro realizado!';
+            await carregarInterfaceLogada();
+        }
+    }
 }
 
-// ==================== CALENDÁRIO ====================
+async function carregarInterfaceLogada() {
+    document.getElementById('secaoCadastro').style.display = 'none';
+    document.getElementById('dividerArea').style.display = 'block';
+    document.getElementById('secaoPresenca').style.display = 'block';
+    document.getElementById('secaoCalendario').style.display = 'block';
+    document.getElementById('secaoEscreverOracao').style.display = 'block';
+    
+    await carregarMuralPresenca();
+    await carregarCalendarioPessoal();
+}
+
+// ==================== MURAL DE PRESENÇA ====================
+async function carregarMuralPresenca() {
+    const { data: participantes } = await supabase
+        .from('participantes')
+        .select('id, nickname')
+        .order('nickname');
+    
+    const hoje = new Date();
+    const diasAteTerca = (2 - hoje.getDay() + 7) % 7;
+    const ultimaTerca = new Date(hoje);
+    ultimaTerca.setDate(hoje.getDate() - diasAteTerca);
+    ultimaTerca.setHours(0,0,0,0);
+    const dataRef = ultimaTerca.toISOString().split('T')[0];
+    
+    const { data: presencas } = await supabase
+        .from('presenca')
+        .select('participante_id')
+        .eq('semana', dataRef);
+    
+    const marcados = new Set(presencas?.map(p => p.participante_id) || []);
+    
+    const tbody = document.getElementById('listaPresenca');
+    tbody.innerHTML = '';
+    
+    for (const p of participantes) {
+        const marcou = marcados.has(p.id);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="nickname-cell">${escapeHtml(p.nickname)}</td>
+            <td class="${marcou ? 'status-marcado' : 'status-pendente'}">${marcou ? '✅ Marcou' : '⬜ Pendente'}</td>
+            <td>${usuarioAtual.id === p.id ? (marcou ? '<button disabled class="btn">✅ Já marcou</button>' : `<button onclick="marcarPresenca('${dataRef}')" class="btn btn-primary">🙏 Marcar presença</button>`) : ''}</td>
+        `;
+        tbody.appendChild(tr);
+    }
+    
+    const usuarioMarcou = marcados.has(usuarioAtual.id);
+    document.getElementById('seuStatusMsg').innerHTML = usuarioMarcou 
+        ? '✅ Você já marcou presença nesta terça-feira. Obrigado por jejuar e orar!' 
+        : '⚠️ Você ainda não marcou presença. Clique no botão ao lado do seu nickname.';
+}
+
+async function marcarPresenca(dataRef) {
+    const { error } = await supabase
+        .from('presenca')
+        .insert({ participante_id: usuarioAtual.id, semana: dataRef });
+    
+    if (error && error.code !== '23505') {
+        alert('Erro: ' + error.message);
+    } else {
+        await carregarMuralPresenca();
+        alert('✅ Presença marcada!');
+    }
+}
+
+// ==================== CALENDÁRIO PESSOAL ====================
+const totalDias = 384;
+let diasMarcados = new Set();
+
+function loadProgresso() {
+    const saved = localStorage.getItem(`jornaleiro_marcados_${usuarioAtual.id}`);
+    if (saved) diasMarcados = new Set(JSON.parse(saved));
+    else { diasMarcados.add("2026-05-19"); diasMarcados.add("2026-05-26"); }
+}
+function saveProgresso() { 
+    localStorage.setItem(`jornaleiro_marcados_${usuarioAtual.id}`, JSON.stringify([...diasMarcados])); 
+}
+function toggleDia(dateStr, element) { 
+    if (diasMarcados.has(dateStr)) { 
+        diasMarcados.delete(dateStr); 
+        element.classList.remove('marked'); 
+    } else { 
+        diasMarcados.add(dateStr); 
+        element.classList.add('marked'); 
+    } 
+    saveProgresso(); 
+}
+
 const meses = [
     { nome: "MAIO 2026", dias: 31, inicioSemana: 5, eventos: { 19: "☑️ Terça", 21: "🕯️ Início Shavuot", 23: "🕯️ Fim Shavuot ⭐", 26: "☑️ Terça" } },
     { nome: "JUNHO 2026", dias: 30, inicioSemana: 1, eventos: { 2: "☑️ Terça", 9: "☑️ Terça", 16: "☑️ Terça", 23: "☑️ Terça", 30: "☑️ Terça" } },
@@ -299,47 +389,11 @@ const meses = [
     { nome: "JUNHO 2027", dias: 10, inicioSemana: 2, eventos: { 1: "☑️ Terça", 5: "⭐", 8: "☑️ Terça", 10: "🕯️ Shavuot", 11: "⭐" } }
 ];
 
-let marcacoesGlobais = {}; // { "2026-05-19": 5, ... }
-
-// Carregar marcações globais do banco
-async function carregarMarcacoesGlobais() {
-    const { data, error } = await supabase.from('dias_marcados').select('data_dia');
-    if (error) { console.error(error); return; }
-    marcacoesGlobais = {};
-    data.forEach(m => { marcacoesGlobais[m.data_dia] = (marcacoesGlobais[m.data_dia] || 0) + 1; });
-    document.getElementById('totalMarcacoesGlobais').textContent = data.length || 0;
-    gerarCalendario(); // recarregar para mostrar os números
-}
-
-// Verificar se usuário já marcou este dia
-async function usuarioJaMarcou(dataDia) {
-    const { data, error } = await supabase
-        .from('dias_marcados')
-        .select('id')
-        .eq('data_dia', dataDia)
-        .eq('sessao_hash', sessaoHash)
-        .maybeSingle();
-    if (error) return false;
-    return !!data;
-}
-
-async function toggleDiaGlobal(dataDia, element) {
-    const jaMarcou = await usuarioJaMarcou(dataDia);
-    if (jaMarcou) {
-        // Desmarcar (delete)
-        await supabase.from('dias_marcados').delete().eq('data_dia', dataDia).eq('sessao_hash', sessaoHash);
-        element.classList.remove('marked');
-    } else {
-        // Marcar
-        await supabase.from('dias_marcados').insert({ data_dia: dataDia, sessao_hash: sessaoHash });
-        element.classList.add('marked');
-    }
-    await carregarMarcacoesGlobais();
-}
-
-async function gerarCalendario() {
+async function carregarCalendarioPessoal() {
+    loadProgresso();
     const container = document.getElementById('calendar');
     container.innerHTML = '';
+    
     for (let mi=0; mi<meses.length; mi++) {
         const m = meses[mi];
         const card = document.createElement('div'); card.className = 'month-card';
@@ -347,114 +401,129 @@ async function gerarCalendario() {
         header.innerHTML = `📅 ${m.nome} <span style="float:right;">▼</span>`;
         header.onclick = () => card.classList.toggle('open');
         const grid = document.createElement('div'); grid.className = 'month-days';
-        ['D','S','T','Q','Q','S','S'].forEach(d => { let dDiv = document.createElement('div'); dDiv.textContent = d; dDiv.style.fontWeight='bold'; dDiv.style.color='#b45309'; grid.appendChild(dDiv); });
-        for (let i=0; i<m.inicioSemana; i++) { let e = document.createElement('div'); grid.appendChild(e); }
+        
+        ['D','S','T','Q','Q','S','S'].forEach(d => { 
+            let dDiv = document.createElement('div'); 
+            dDiv.textContent = d; 
+            dDiv.style.fontWeight = 'bold'; 
+            dDiv.style.color = '#b45309'; 
+            dDiv.style.textAlign = 'center';
+            grid.appendChild(dDiv); 
+        });
+        
+        for (let i=0; i<m.inicioSemana; i++) { 
+            let e = document.createElement('div'); 
+            grid.appendChild(e); 
+        }
+        
         for (let d=1; d<=m.dias; d++) {
             let dataStr = `2026-${String(mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             if (mi>=12) dataStr = `2027-${String(mi-11).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const ev = m.eventos[d] || '';
-            const jaMarcou = await usuarioJaMarcou(dataStr);
-            const totalMarcadores = marcacoesGlobais[dataStr] || 0;
-            
+            const isMarked = diasMarcados.has(dataStr);
             const dayDiv = document.createElement('div'); dayDiv.className = 'day-cell';
-            if (jaMarcou) dayDiv.classList.add('marked');
+            if (isMarked) dayDiv.classList.add('marked');
             if (ev.includes('☑️') || ev.includes('Terça')) dayDiv.classList.add('tuesday');
             if (ev.includes('🕯️')) dayDiv.classList.add('festa');
             if (ev.includes('⭐')) dayDiv.classList.add('shabbat');
             
-            const numSpan = document.createElement('span'); numSpan.className = 'day-number'; numSpan.textContent = d;
+            const numSpan = document.createElement('span'); numSpan.className = 'day-number'; 
+            numSpan.textContent = d;
             dayDiv.appendChild(numSpan);
-            if (ev) { let evSpan = document.createElement('span'); evSpan.className = 'day-event'; evSpan.textContent = ev.replace('⭐','').trim(); dayDiv.appendChild(evSpan); }
-            
-            // Mostrar quantos marcaram este dia
-            if (totalMarcadores > 0) {
-                const contSpan = document.createElement('span'); contSpan.className = 'contador-marcacoes'; contSpan.textContent = `🔢${totalMarcadores}`;
-                dayDiv.appendChild(contSpan);
+            if (ev) { 
+                let evSpan = document.createElement('span'); 
+                evSpan.className = 'day-event'; 
+                evSpan.textContent = ev.replace('⭐','').trim(); 
+                dayDiv.appendChild(evSpan); 
             }
-            
-            dayDiv.onclick = (function(ds, el) { return async () => { await toggleDiaGlobal(ds, el); }; })(dataStr, dayDiv);
+            dayDiv.onclick = (function(ds, el) { return () => toggleDia(ds, el); })(dataStr, dayDiv);
             grid.appendChild(dayDiv);
         }
-        card.appendChild(header); card.appendChild(grid); container.appendChild(card);
+        card.appendChild(header); 
+        card.appendChild(grid); 
+        container.appendChild(card);
+    }
+    
+    // Abrir mês atual
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    let indexMesAtual = -1;
+    for (let i=0; i<meses.length; i++) {
+        const nomeMes = meses[i].nome;
+        if (nomeMes.includes("2026") && anoAtual === 2026 && mesAtual === parseInt(nomeMes.split(" ")[0])) indexMesAtual = i;
+        if (nomeMes.includes("2027") && anoAtual === 2027 && mesAtual === parseInt(nomeMes.split(" ")[0])) indexMesAtual = i;
+    }
+    if (indexMesAtual >= 0 && document.querySelectorAll('.month-card')[indexMesAtual]) {
+        document.querySelectorAll('.month-card')[indexMesAtual].classList.add('open');
+    } else if (document.querySelector('.month-card')) {
+        document.querySelector('.month-card').classList.add('open');
     }
 }
 
-// ==================== PARTICIPANTES ====================
-let usuarioJaParticipou = false;
-
-async function registrarParticipacao() {
-    if (usuarioJaParticipou) { alert('Você já registrou sua participação.'); return; }
-    const { error } = await supabase.from('participantes').insert({ sessao_hash: sessaoHash });
-    if (error && error.code !== '23505') { console.error(error); alert('Erro, tente novamente.'); return; }
-    usuarioJaParticipou = true;
-    localStorage.setItem('jornaleiro_participou', 'true');
-    await carregarTotalParticipantes();
-    document.getElementById('jaParticipouMsg').style.display = 'block';
-    document.getElementById('btnParticipar').disabled = true;
-    alert('✅ Participação registrada anonimamente!');
-}
-
-async function carregarTotalParticipantes() {
-    const { count, error } = await supabase.from('participantes').select('*', { count: 'exact', head: true });
-    if (!error) {
-        document.getElementById('contadorParticipantes').textContent = count || 0;
-        document.getElementById('contadorParticipantesLocal').textContent = count || 0;
-    }
-}
-
-// ==================== COMENTÁRIOS GLOBAIS ====================
+// ==================== COMENTÁRIOS ====================
 async function carregarComentarios() {
-    const { data, error } = await supabase.from('comentarios_anonimos').select('texto, created_at').order('created_at', { ascending: false }).limit(50);
+    const { data, error } = await supabase
+        .from('comentarios_anonimos')
+        .select('texto, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+    
     const area = document.getElementById('areaMensagens');
-    if (error || !data || data.length === 0) { area.innerHTML = '<div style="color:#6c6f6b; text-align:center; padding:20px;">Nenhum comentário ainda. Seja o primeiro.</div>'; return; }
-    area.innerHTML = data.map(msg => `<div class="mensagem-item">📝 ${escapeHtml(msg.texto)}<div class="mensagem-data">${new Date(msg.created_at).toLocaleString()}</div></div>`).join('');
+    if (error || !data || data.length === 0) {
+        area.innerHTML = '<div style="text-align:center; padding:20px;">🙏 Nenhuma oração compartilhada ainda. Seja o primeiro.</div>';
+        return;
+    }
+    area.innerHTML = data.map(msg => `
+        <div class="comentario-item">
+            📝 ${escapeHtml(msg.texto)}
+            <div class="comentario-data">${new Date(msg.created_at).toLocaleString()}</div>
+        </div>
+    `).join('');
 }
 
 async function enviarComentario(texto) {
-    if (!texto.trim()) return false;
-    const { error } = await supabase.from('comentarios_anonimos').insert({ texto: texto.trim(), sessao_hash: sessaoHash });
-    if (error) { console.error(error); return false; }
+    const { error } = await supabase.from('comentarios_anonimos').insert({ texto: texto.trim() });
+    if (error) { 
+        alert('Erro: ' + error.message); 
+        return false; 
+    }
     return true;
 }
 
-function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-
-// ==================== ADMIN (você vê quem participou) ====================
-async function carregarListaParticipantesAdmin() {
-    const { data, error } = await supabase.from('participantes').select('sessao_hash, created_at').order('created_at', { ascending: false });
-    if (error) { console.error(error); return; }
-    const listaDiv = document.getElementById('listaParticipantesAdmin');
-    listaDiv.innerHTML = data.map(p => `<div style="border-bottom:1px solid #e7e5e4; padding:4px;">🕯️ ${p.sessao_hash.substring(0, 20)}... - ${new Date(p.created_at).toLocaleDateString()}</div>`).join('');
-    if (data.length === 0) listaDiv.innerHTML = '<div>Nenhum participante registrado ainda.</div>';
+function escapeHtml(text) { 
+    const div = document.createElement('div'); 
+    div.textContent = text; 
+    return div.innerHTML; 
 }
 
 // ==================== INICIALIZAÇÃO ====================
-async function init() {
-    await carregarMarcacoesGlobais();
-    await carregarTotalParticipantes();
-    await carregarComentarios();
-    const participou = localStorage.getItem('jornaleiro_participou') === 'true';
-    if (participou) { usuarioJaParticipou = true; document.getElementById('jaParticipouMsg').style.display = 'block'; document.getElementById('btnParticipar').disabled = true; }
-}
-
-document.getElementById('btnParticipar').addEventListener('click', registrarParticipacao);
+document.getElementById('btnCadastrar').addEventListener('click', cadastrarOuEntrar);
 document.getElementById('btnEnviarMsg').addEventListener('click', async () => {
+    if (!usuarioAtual) {
+        alert('Faça login para escrever no mural.');
+        return;
+    }
     const texto = document.getElementById('msgAnonimo').value.trim();
     if (!texto) { alert('Escreva uma mensagem.'); return; }
     if (texto.length > 500) { alert('Máximo 500 caracteres.'); return; }
-    const success = await enviarComentario(texto);
-    if (success) { document.getElementById('msgAnonimo').value = ''; await carregarComentarios(); alert('✅ Comentário enviado anonimamente!'); }
-    else alert('❌ Erro ao enviar.');
+    if (await enviarComentario(texto)) {
+        document.getElementById('msgAnonimo').value = '';
+        await carregarComentarios();
+        alert('✅ Oração enviada!');
+    }
 });
 
-// Admin login
-let adminLogado = false;
-document.getElementById('btnAdminLogin').addEventListener('click', () => {
-    const senha = prompt('Digite a senha de administrador:');
-    if (senha === ADMIN_SENHA) {
-        adminLogado = true;
-        document.getElementById('adminSection').style.display = 'block';
-        carregarListaParticipantesAdmin();
-        document.getElementById('btnRefreshAdmin').onclick = carregarListaParticipantesAdmin;
-        alert('Acesso concedido. Você pode ver a lista de participantes (apenas hashes anônimos).');
-    }
+// Carregar comentários públicos
+carregarComentarios();
+
+// Verificar login salvo
+const savedId = localStorage.getItem('jornaleiro_usuario_id');
+const savedNick = localStorage.getItem('jornaleiro_nickname');
+if (savedId && savedNick) {
+    usuarioAtual = { id: parseInt(savedId), nickname: savedNick };
+    carregarInterfaceLogada();
+}
+</script>
+</body>
+</html>
