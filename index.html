@@ -27,7 +27,6 @@
         const DIAS_TOTAIS = 384;
         
         let usuarioAtual = null;
-        let usuarioNickname = null;
 
         const splashScreen = document.getElementById('splashScreen');
         const appScreen = document.getElementById('appScreen');
@@ -54,7 +53,6 @@
             return { diasDecorridos, diasRestantes, percentual };
         }
 
-        // ========== LOGIN COM POPUP ==========
         window.loginComGoogle = async () => {
             try {
                 const result = await signInWithPopup(auth, provider);
@@ -63,7 +61,7 @@
                 const docSnap = await getDoc(userDocRef);
                 
                 if (!docSnap.exists()) {
-                    let nickname = prompt('✨ Escolha um NICKNAME público (ex: LeãoDeJudá, Serva, Vigia):', 'Jornaleiro');
+                    let nickname = prompt('✨ Escolha um NICKNAME público:', 'Jornaleiro');
                     while (!nickname || nickname.trim() === '') {
                         nickname = prompt('Nickname não pode ficar vazio:');
                     }
@@ -74,7 +72,7 @@
                 }
             } catch (error) {
                 if (error.code === 'auth/popup-blocked') {
-                    alert('⚠️ O navegador bloqueou a janela de login. Clique no ícone de pop-up bloqueado na barra de endereço e permita para este site.');
+                    alert('⚠️ Permitir pop-ups para este site no navegador.');
                 } else {
                     alert('Erro: ' + error.message);
                 }
@@ -100,7 +98,6 @@
                 });
                 buttonElement.classList.remove('marked');
                 buttonElement.style.background = '#fef9f0';
-                buttonElement.style.color = '#1e2a2e';
             } else {
                 await runTransaction(db, async (transaction) => {
                     const diaDoc = await transaction.get(diaRef);
@@ -119,41 +116,43 @@
         async function carregarTodasEstatisticas() {
             const usuariosSnapshot = await getDocs(collection(db, 'usuarios'));
             const totalUsuarios = usuariosSnapshot.size;
-            totalParticipantesSpan.textContent = totalUsuarios;
+            if (totalParticipantesSpan) totalParticipantesSpan.textContent = totalUsuarios;
             
             const diasSnapshot = await getDocs(collection(db, 'dias'));
             let totalMarcacoes = 0;
             diasSnapshot.forEach(doc => { totalMarcacoes += doc.data().total || 0; });
-            totalMarcacoesSpan.textContent = totalMarcacoes;
+            if (totalMarcacoesSpan) totalMarcacoesSpan.textContent = totalMarcacoes;
             
             const media = totalUsuarios > 0 ? (totalMarcacoes / totalUsuarios).toFixed(1) : 0;
-            mediaPorPessoaSpan.textContent = media;
+            if (mediaPorPessoaSpan) mediaPorPessoaSpan.textContent = media;
             
             const { diasDecorridos, diasRestantes, percentual } = calcularDiasJornada();
-            diasDecorridosSpan.textContent = diasDecorridos;
-            diasRestantesSpan.textContent = diasRestantes;
-            progressoJornadaFill.style.width = percentual + '%';
-            percentualJornadaSpan.textContent = Math.floor(percentual);
+            if (diasDecorridosSpan) diasDecorridosSpan.textContent = diasDecorridos;
+            if (diasRestantesSpan) diasRestantesSpan.textContent = diasRestantes;
+            if (progressoJornadaFill) progressoJornadaFill.style.width = percentual + '%';
+            if (percentualJornadaSpan) percentualJornadaSpan.textContent = Math.floor(percentual);
             
             const hoje = new Date().toISOString().split('T')[0];
             const hojeDoc = await getDoc(doc(db, 'dias', hoje));
             const marcaramHoje = hojeDoc.data()?.total || 0;
-            hojeMarcaramSpan.textContent = marcaramHoje;
+            if (hojeMarcaramSpan) hojeMarcaramSpan.textContent = marcaramHoje;
             
             const q = query(collection(db, 'dias'), orderBy('total', 'desc'), limit(5));
             const topSnapshot = await getDocs(q);
-            topDiasDiv.innerHTML = '';
-            if (topSnapshot.empty) {
-                topDiasDiv.innerHTML = '<div style="color: #6c6f6b;">Nenhum dia marcado ainda.</div>';
-            } else {
-                topSnapshot.forEach(doc => {
-                    const data = doc.id;
-                    const total = doc.data().total;
-                    const div = document.createElement('div');
-                    div.style.cssText = 'display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0e7db;';
-                    div.innerHTML = `<span>📅 ${formatarDataBr(data)}</span><span style="font-weight: bold; color: #b45309;">🔥 ${total} ${total === 1 ? 'pessoa' : 'pessoas'}</span>`;
-                    topDiasDiv.appendChild(div);
-                });
+            if (topDiasDiv) {
+                topDiasDiv.innerHTML = '';
+                if (topSnapshot.empty) {
+                    topDiasDiv.innerHTML = '<div style="color: #6c6f6b;">Nenhum dia marcado ainda.</div>';
+                } else {
+                    topSnapshot.forEach(doc => {
+                        const data = doc.id;
+                        const total = doc.data().total;
+                        const div = document.createElement('div');
+                        div.style.cssText = 'display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0e7db;';
+                        div.innerHTML = `<span>📅 ${formatarDataBr(data)}</span><span style="font-weight: bold; color: #b45309;">🔥 ${total}</span>`;
+                        topDiasDiv.appendChild(div);
+                    });
+                }
             }
         }
 
@@ -181,7 +180,6 @@
             });
         }
 
-        // ==================== MURAL DE ORAÇÕES ====================
         async function carregarComentarios() {
             const area = document.getElementById('areaMensagens');
             if (!area) return;
@@ -190,7 +188,7 @@
             onSnapshot(q, (snapshot) => {
                 area.innerHTML = '';
                 if (snapshot.empty) {
-                    area.innerHTML = '<div style="text-align:center; padding:20px;">🙏 Nenhuma oração compartilhada ainda. Seja o primeiro.</div>';
+                    area.innerHTML = '<div style="text-align:center; padding:20px;">🙏 Seja o primeiro a compartilhar uma oração.</div>';
                     return;
                 }
                 snapshot.forEach(doc => {
@@ -220,23 +218,22 @@
             return div.innerHTML;
         }
 
-        // ==================== GERAR CALENDÁRIO ====================
         async function gerarCalendario() {
             const meses = [
-                { nome: "MAIO 2026", dias: 31, inicio: 5, ano: 2026, mesNum: 4, eventos: { 21: "🕯️ Shavuot", 22: "🕯️ Shavuot", 23: "🕯️ Shavuot ⭐" } },
+                { nome: "MAIO 2026", dias: 31, inicio: 5, ano: 2026, mesNum: 4, eventos: {} },
                 { nome: "JUNHO 2026", dias: 30, inicio: 1, ano: 2026, mesNum: 5, eventos: {} },
-                { nome: "JULHO 2026", dias: 31, inicio: 3, ano: 2026, mesNum: 6, eventos: { 22: "🕯️ Tisha B'Av", 23: "🕯️ Tisha B'Av" } },
+                { nome: "JULHO 2026", dias: 31, inicio: 3, ano: 2026, mesNum: 6, eventos: {} },
                 { nome: "AGOSTO 2026", dias: 31, inicio: 6, ano: 2026, mesNum: 7, eventos: {} },
-                { nome: "SETEMBRO 2026", dias: 30, inicio: 2, ano: 2026, mesNum: 8, eventos: { 11: "🕯️ Rosh Hashaná", 12: "🕯️ Rosh Hashaná ⭐", 13: "🕯️ Rosh Hashaná", 20: "🕯️ Yom Kippur", 21: "🕯️ Yom Kippur", 25: "🕯️ Sucot ⭐", 26: "🕯️ Sucot ⭐", 27: "🕯️ Sucot", 28: "🕯️ Sucot", 29: "🕯️ Sucot", 30: "🕯️ Sucot" } },
-                { nome: "OUTUBRO 2026", dias: 31, inicio: 4, ano: 2026, mesNum: 9, eventos: { 1: "🕯️ Sucot", 2: "🕯️ Shemini Atzeret ⭐", 3: "🕯️ Simchat Torá", 4: "⭐" } },
+                { nome: "SETEMBRO 2026", dias: 30, inicio: 2, ano: 2026, mesNum: 8, eventos: {} },
+                { nome: "OUTUBRO 2026", dias: 31, inicio: 4, ano: 2026, mesNum: 9, eventos: {} },
                 { nome: "NOVEMBRO 2026", dias: 30, inicio: 0, ano: 2026, mesNum: 10, eventos: {} },
-                { nome: "DEZEMBRO 2026", dias: 31, inicio: 2, ano: 2026, mesNum: 11, eventos: { 4: "🕯️ Chanucá ⭐", 5: "🕯️ Chanucá ⭐", 6: "🕯️ Chanucá", 7: "🕯️ Chanucá", 8: "🕯️ Chanucá", 9: "🕯️ Chanucá", 10: "🕯️ Chanucá", 11: "🕯️ Chanucá", 12: "🕯️ Chanucá ⭐" } },
-                { nome: "JANEIRO 2027", dias: 31, inicio: 5, ano: 2027, mesNum: 0, eventos: { 22: "🕯️ Tu BiShvat", 23: "🕯️ Tu BiShvat ⭐" } },
+                { nome: "DEZEMBRO 2026", dias: 31, inicio: 2, ano: 2026, mesNum: 11, eventos: {} },
+                { nome: "JANEIRO 2027", dias: 31, inicio: 5, ano: 2027, mesNum: 0, eventos: {} },
                 { nome: "FEVEREIRO 2027", dias: 28, inicio: 1, ano: 2027, mesNum: 1, eventos: {} },
-                { nome: "MARÇO 2027", dias: 31, inicio: 1, ano: 2027, mesNum: 2, eventos: { 22: "🕯️ Purim", 23: "🕯️ Purim" } },
-                { nome: "ABRIL 2027", dias: 30, inicio: 4, ano: 2027, mesNum: 3, eventos: { 21: "🕯️ Pêssach", 22: "🕯️ Pêssach", 23: "🕯️ Pêssach ⭐", 24: "🕯️ Pêssach", 25: "🕯️ Pêssach", 26: "🕯️ Pêssach", 27: "🕯️ Pêssach", 28: "🕯️ Pêssach" } },
-                { nome: "MAIO 2027", dias: 31, inicio: 6, ano: 2027, mesNum: 4, eventos: { 24: "🕯️ Lag BaOmer", 25: "🕯️ Lag BaOmer" } },
-                { nome: "JUNHO 2027", dias: 10, inicio: 2, ano: 2027, mesNum: 5, eventos: { 10: "🕯️ Shavuot", 11: "🕯️ Shavuot ⭐" } }
+                { nome: "MARÇO 2027", dias: 31, inicio: 1, ano: 2027, mesNum: 2, eventos: {} },
+                { nome: "ABRIL 2027", dias: 30, inicio: 4, ano: 2027, mesNum: 3, eventos: {} },
+                { nome: "MAIO 2027", dias: 31, inicio: 6, ano: 2027, mesNum: 4, eventos: {} },
+                { nome: "JUNHO 2027", dias: 10, inicio: 2, ano: 2027, mesNum: 5, eventos: {} }
             ];
             
             let marcacoesUsuario = new Set();
@@ -278,20 +275,11 @@
                     const dataStr = `${mes.ano}-${String(mes.mesNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                     const total = contadores[dataStr] || 0;
                     const usuarioMarcou = marcacoesUsuario.has(dataStr);
-                    const evento = mes.eventos[d] || '';
                     
                     const dayDiv = document.createElement('div');
                     dayDiv.className = 'day-cell';
                     dayDiv.setAttribute('data-date', dataStr);
-                    
-                    let bgColor = '#fef9f0';
-                    let textColor = '#1e2a2e';
-                    if (usuarioMarcou) { bgColor = '#b45309'; textColor = 'white'; }
-                    if (evento.includes('🕯️') && !usuarioMarcou) { bgColor = '#d97706'; textColor = 'white'; }
-                    if (evento.includes('⭐') && !usuarioMarcou) { bgColor = '#4b5563'; textColor = 'white'; }
-                    
-                    dayDiv.style.cssText = `background: ${bgColor}; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db; color: ${textColor};`;
-                    if (usuarioMarcou && (evento.includes('🕯️') || evento.includes('⭐'))) dayDiv.style.outline = '2px solid #fbbf24';
+                    dayDiv.style.cssText = 'background: #fef9f0; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db;' + (usuarioMarcou ? ' background: #b45309; color: white;' : '');
                     
                     const dayNumber = document.createElement('div');
                     dayNumber.style.fontWeight = 'bold';
@@ -299,17 +287,8 @@
                     dayNumber.textContent = d;
                     dayDiv.appendChild(dayNumber);
                     
-                    if (evento) {
-                        const eventSpan = document.createElement('div');
-                        eventSpan.style.fontSize = '0.55rem';
-                        eventSpan.style.marginTop = '4px';
-                        eventSpan.textContent = evento;
-                        dayDiv.appendChild(eventSpan);
-                    }
-                    
                     if (total > 0) {
                         const contadorSpan = document.createElement('div');
-                        contadorSpan.className = 'contador-dia';
                         contadorSpan.style.cssText = 'font-size: 0.55rem; margin-top: 2px;';
                         contadorSpan.textContent = `🔥 ${total}`;
                         dayDiv.appendChild(contadorSpan);
@@ -331,255 +310,21 @@
             }
             if (monthBodies[0] && !document.querySelector('.month-body[style*="grid"]')) { monthBodies[0].style.display = 'grid'; }
         }
-        
-        // ========== SALMO DO DIA ==========
-        const salmosSemana = {
-            0: {
-                referencia: "Salmo 24",
-                titulo: "Do Eterno é a terra e tudo o que nela existe",
-                texto: "1. Do Eterno é a terra e tudo o que nela existe, o mundo e todos os que nele habitam.\n2. Pois ele a fundou sobre os mares e sobre as correntes a estabeleceu.\n3. Quem pode subir ao monte do Eterno? Quem pode estar em seu santo lugar?\n4. Aquele que tem mãos inocentes e coração puro, que não eleva a alma a ídolos nem jura com falsidade.\n5. Ele receberá a bênção do Eterno e a justiça do Deus da sua salvação.\n6. Tal é a geração daqueles que o buscam, que buscam a tua face, ó Deus de Jacó. (Selah)",
-                audioId: "1zuO9EqKnikIl18v8-PZ1CbBnrY1DR2Lb",
-                sefariaLink: "https://www.sefaria.org/Psalms.24?lang=pt"
-            },
-            1: {
-                referencia: "Salmo 48",
-                titulo: "Grande é o Eterno e mui digno de louvor",
-                texto: "1. Grande é o Eterno e mui digno de louvor na cidade do nosso Deus, no seu santo monte.\n2. Bela e sublime é a alegria de toda a terra; o monte Sião, nos lados do norte, a cidade do grande Rei.\n3. Em seus palácios, Deus se fez conhecido como alto refúgio.\n4. Pois eis que os reis se ajuntaram; eles passaram juntos.\n5. Viram-no e ficaram maravilhados; ficaram aterrorizados e fugiram apressadamente.\n6. Tremor ali os apanhou, dores como de parturiente.\n7. Com vento oriental quebraste as naus de Társis.\n8. Como temos ouvido, assim o vimos na cidade do Eterno dos Exércitos, na cidade do nosso Deus; Deus a estabelecerá para sempre. (Selah)",
-                audioId: "1SnFLrHBX6WcGnXZGbiSgH674GSkVOXrV",
-                sefariaLink: "https://www.sefaria.org/Psalms.48?lang=pt"
-            },
-            2: {
-                referencia: "Salmo 82",
-                titulo: "Deus preside na assembleia divina",
-                texto: "1. Deus preside na assembleia divina; no meio dos juízes, ele julga.\n2. 'Até quando julgareis injustamente e tomareis o partido dos ímpios? (Selah)\n3. Fazei justiça ao pobre e ao órfão; tratai com retidão o aflito e o necessitado.\n4. Livrai o pobre e o necessitado; salvai-os das mãos dos ímpios.'\n5. Eles nada sabem, nem entendem; andam nas trevas; todos os fundamentos da terra vacilam.\n6. Eu disse: 'Vós sois deuses, sois todos filhos do Altíssimo.'\n7. No entanto, morrereis como homens e caireis como qualquer príncipe.\n8. Levanta-te, ó Deus, julga a terra, pois a ti pertencem todas as nações.",
-                audioId: "1RGUDwv7lE77R-sUFnpuNxru2sIpT92nR",
-                sefariaLink: "https://www.sefaria.org/Psalms.82?lang=pt"
-            },
-            3: {
-                referencia: "Salmos 94:1-95:3",
-                titulo: "O Eterno é Deus das vinganças",
-                texto: "94:1. O Eterno é Deus das vinganças; resplandece!\n94:2. Exalta-te, ó Juiz da terra; dá aos soberbos o que merecem.\n94:3. Até quando os ímpios, ó Eterno, até quando os ímpios exultarão?\n95:1. Vinde, cantemos ao Eterno; jubilemos ao Rochedo da nossa salvação.\n95:2. Apresentemo-nos diante dele com ações de graças; celebremo-lo com salmos.\n95:3. Porque o Eterno é Deus grande, e Rei grande acima de todos os deuses.",
-                audioId: "1G1ghCdXlq0IB4AH-d2ypug0vVram8ozg",
-                sefariaLink: "https://www.sefaria.org/Psalms.94?lang=pt"
-            },
-            4: {
-                referencia: "Salmo 81",
-                titulo: "Cantai alegremente a Deus",
-                texto: "1. Cantai alegremente a Deus, nossa força; jubilai ao Deus de Jacó.\n2. Entoai um cântico, tocai o tamborim, a lira suave e a harpa.\n3. Tocai a trombeta na lua nova, no tempo apontado da nossa festa solene.\n4. Porque isto é um estatuto para Israel, uma ordenança do Deus de Jacó.\n5. Ele o estabeleceu como testemunho em José, quando saiu contra a terra do Egito.\n6. Ouvi uma voz que não conhecia, dizendo: 'Livrei os seus ombros do peso; as suas mãos foram libertadas dos cestos.'\n7. Na angústia clamaste, e eu te livrei; respondi-te no lugar escondido do trovão; provei-te nas águas de Meribá. (Selah)\n8. Ouve, povo meu, e eu te admoestarei; ó Israel, se me ouvisses!\n9. Não haverá entre ti deus estranho, nem te prostrarás a deus estrangeiro.\n10. Eu sou o Eterno teu Deus, que te tirei da terra do Egito; abre bem a tua boca, e a encherei.",
-                audioId: "1DYQCe4XCVPRCjY2p2epgXF9GQCMZ9KDu",
-                sefariaLink: "https://www.sefaria.org/Psalms.81?lang=pt"
-            },
-            5: {
-                referencia: "Salmo 93",
-                titulo: "O Eterno reina! Está vestido de majestade",
-                texto: "1. O Eterno reina! Está vestido de majestade. O Eterno se vestiu e se cingiu de poder; o mundo também está estabelecido, e não poderá vacilar.\n2. O teu trono está firme desde então; tu és desde a eternidade.\n3. Os rios levantam, ó Eterno, os rios levantam o seu rugido, os rios levantam o seu fragor.\n4. Mas o Eterno nas alturas é mais poderoso do que o estrondo das grandes águas, do que as poderosas ondas do mar.\n5. Mui fiéis são os teus testemunhos; a santidade é a beleza da tua casa, ó Eterno, para todo o sempre.",
-                audioId: "1aE5Ri7KXKiISDtDNO0XfRKEeKDyvugIe",
-                sefariaLink: "https://www.sefaria.org/Psalms.93?lang=pt"
-            },
-            6: {
-                referencia: "Salmo 92",
-                titulo: "Bom é louvar ao Eterno",
-                texto: "1. Bom é louvar ao Eterno e cantar louvores ao teu nome, ó Altíssimo,\n2. anunciar de manhã a tua benignidade e, durante as noites, a tua fidelidade,\n3. com instrumentos de dez cordas e com saltério, com harpa e com som suave.\n4. Pois me alegraste, ó Eterno, com os teus feitos; exultarei nas obras das tuas mãos.\n5. Quão grandes são as tuas obras, ó Eterno! Quão profundos são os teus pensamentos!\n6. O homem insensato não sabe, e o tolo não entende isto.\n7. Ainda que os ímpios brotem como a erva e floresçam todos os que praticam a iniquidade, serão destruídos para todo o sempre.\n8. Mas tu, ó Eterno, és exaltado para sempre.\n9. Pois eis que os teus inimigos, ó Eterno, eis que os teus inimigos perecerão; todos os que praticam a iniquidade serão dispersos.\n10. Porém exaltarás o meu poder como o do boi selvagem; serei ungido com óleo fresco.\n11. Os meus olhos verão o fim dos meus inimigos; os meus ouvidos ouvirão o dos malfeitores que se levantam contra mim.\n12. O justo florescerá como a palmeira; crescerá como o cedro do Líbano.\n13. Os que estão plantados na casa do Eterno florescerão nos átrios do nosso Deus.\n14. Na velhice ainda darão frutos; serão viçosos e florescentes,\n15. para anunciar que o Eterno é reto; ele é a minha rocha, e nele não há injustiça.",
-                audioId: "1iKdIqmCkzkZE5nQi04HApSGVUMk2boF1",
-                sefariaLink: "https://www.sefaria.org/Psalms.92?lang=pt"
-            }
-        };
-        
-        function carregarSalmoDia() {
-            const hoje = new Date();
-            const diaSemana = hoje.getDay();
-            const salmo = salmosSemana[diaSemana];
-            
-            const container = document.getElementById('conteudoSalmo');
-            if (!container || !salmo) return;
-            
-            const nomeDia = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Shabat'][diaSemana];
-            
-            let html = `
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 16px;">
-                    <div style="font-size: 1.2rem; font-weight: bold; color: #b45309;">✨ ${salmo.referencia}</div>
-                    <div style="font-size: 0.7rem; color: #6c6f6b;">${nomeDia}</div>
-                </div>
-                <div style="font-style: italic; font-size: 0.9rem; line-height: 1.6; margin-bottom: 16px;">"${salmo.titulo}"</div>
-                <div style="font-size: 0.85rem; line-height: 1.5; white-space: pre-line; background: #fff7ed; padding: 16px; border-radius: 16px;">${salmo.texto}</div>
-            `;
-            
-            if (salmo.audioId && salmo.audioId !== "SEU_ID_DO_AUDIO_NO_DRIVE") {
-                const audioUrl = `https://drive.google.com/uc?export=download&id=${salmo.audioId}`;
-                html += `
-                    <div style="margin-top: 16px; padding: 12px; background: #e7e5e4; border-radius: 20px;">
-                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                            <audio controls style="flex: 1; min-width: 200px;">
-                                <source src="${audioUrl}" type="audio/mpeg">
-                                Seu navegador não suporta áudio.
-                            </audio>
-                            <a href="https://drive.google.com/drive/folders/SEU_FOLDER_ID" target="_blank" style="color: #b45309; font-size: 0.7rem;">🎵 Ver todos os salmos →</a>
-                        </div>
-                        <div style="font-size: 0.6rem; color: #6c6f6b; margin-top: 8px; text-align: center;">
-                            🎶 Salmos musicados
-                        </div>
-                    </div>
-                `;
-            }
-            
-            html += `
-                <div style="margin-top: 16px; text-align: right;">
-                    <a href="${salmo.sefariaLink}" target="_blank" style="color: #b45309; font-size: 0.7rem;">📖 Ler no Sefaria →</a>
-                </div>
-            `;
-            
-            container.innerHTML = html;
-        }
 
-        // ========== ESTUDO FFOZ PARA SHABAT ==========
-        const leiturasFFOZ = {
-            "2026-05-30": {
-                parasha: "Naso",
-                torah: "Números 4:21-7:89",
-                haftarah: "Juízes 13:2-25",
-                gospel: "João 7:53-8:11",
-                resumo: "Naso (Eleva) trata da consagração dos levitas, da lei do nazireado e da bênção sacerdotal.",
-                ffozLink: "https://ffoz.org/torahportions/"
-            },
-            "2026-06-06": {
-                parasha: "Beha'alotcha",
-                torah: "Números 8:1-12:16",
-                haftarah: "Zacarias 2:14-4:7",
-                gospel: "Lucas 17:11-18:14",
-                resumo: "Beha'alotcha (Quando você acender) fala sobre o acender das lâmpadas do candelabro, a consagração dos levitas e a reclamação do povo no deserto.",
-                ffozLink: "https://ffoz.org/torahportions/"
-            },
-            "2026-06-13": {
-                parasha: "Shelach Lecha",
-                torah: "Números 13:1-15:41",
-                haftarah: "Josué 2:1-24",
-                gospel: "Mateus 10:1-14",
-                resumo: "Shelach Lecha (Envia para ti) relata o episódio dos espiões enviados a Canaã e a consequente condenação do povo a peregrinar por quarenta anos no deserto.",
-                ffozLink: "https://ffoz.org/torahportions/"
-            },
-            "2026-06-20": {
-                parasha: "Korach",
-                torah: "Números 16:1-18:32",
-                haftarah: "I Samuel 11:14-12:22",
-                gospel: "Marcos 9:38-50",
-                resumo: "Korach narra a rebelião de Corá contra a liderança de Moisés e Arão, e a confirmação divina do sacerdócio levítico.",
-                ffozLink: "https://ffoz.org/torahportions/"
-            },
-            "2026-06-27": {
-                parasha: "Chukat",
-                torah: "Números 19:1-22:1",
-                haftarah: "Juízes 11:1-33",
-                gospel: "João 3:9-21",
-                resumo: "Chukat (Estatuto) apresenta a lei da novilha vermelha, a morte de Miriã e Arão, e a derrota dos reis Siom e Ogue.",
-                ffozLink: "https://ffoz.org/torahportions/"
-            },
-            "2026-07-04": {
-                parasha: "Balak",
-                torah: "Números 22:2-25:9",
-                haftarah: "Miqueias 5:6-6:8",
-                gospel: "Mateus 21:1-11",
-                resumo: "Balak conta a história do rei Balaque que contrata o profeta Balaão para amaldiçoar Israel, mas Deus transforma a maldição em bênção.",
-                ffozLink: "https://ffoz.org/torahportions/"
-            }
-        };
-
-        function carregarEstudoFFOZ() {
-            const container = document.getElementById('conteudoEstudo');
-            if (!container) return;
-            
-            const hoje = new Date();
-            let leituraSelecionada = null;
-            let dataSelecionada = null;
-            
-            for (const [data, leitura] of Object.entries(leiturasFFOZ)) {
-                const dataShabat = new Date(data);
-                if (dataShabat >= hoje) {
-                    leituraSelecionada = leitura;
-                    dataSelecionada = data;
-                    break;
-                }
-            }
-            
-            if (!leituraSelecionada) {
-                const ultimaData = Object.keys(leiturasFFOZ).sort().pop();
-                leituraSelecionada = leiturasFFOZ[ultimaData];
-                dataSelecionada = ultimaData;
-            }
-            
-            if (leituraSelecionada) {
-                const dataFormatada = formatarDataBr(dataSelecionada);
-                const diasAteShabat = calcularDiasAteShabat(dataSelecionada);
-                
-                let textoPrevisao = '';
-                if (diasAteShabat === 0) textoPrevisao = '🕯️ Leitura desta semana (Shabat hoje)';
-                else if (diasAteShabat === 1) textoPrevisao = '🕯️ Próxima leitura amanhã (Shabat)';
-                else textoPrevisao = `🕯️ Próxima leitura em ${diasAteShabat} dias (${dataFormatada})`;
-                
-                container.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px;">
-                        <div style="background: #2c3e2f; color: #fef3c7; padding: 6px 16px; border-radius: 40px; font-size: 0.85rem;">
-                            📜 Parashá ${leituraSelecionada.parasha}
-                        </div>
-                        <div style="font-size: 0.65rem; color: #6c6f6b;">${textoPrevisao}</div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
-                        <div style="background: #fff7ed; border-radius: 16px; padding: 12px; text-align: center;">
-                            <div style="font-weight: bold; color: #b45309; font-size: 0.7rem;">📜 TORAH</div>
-                            <div style="font-size: 0.9rem; font-weight: bold;">${leituraSelecionada.torah}</div>
-                        </div>
-                        <div style="background: #fff7ed; border-radius: 16px; padding: 12px; text-align: center;">
-                            <div style="font-weight: bold; color: #b45309; font-size: 0.7rem;">📖 HAFTARAH (PROFETAS)</div>
-                            <div style="font-size: 0.9rem; font-weight: bold;">${leituraSelecionada.haftarah}</div>
-                        </div>
-                        <div style="background: #fff7ed; border-radius: 16px; padding: 12px; text-align: center;">
-                            <div style="font-weight: bold; color: #b45309; font-size: 0.7rem;">✝️ GOSPEL (EVANGELHO)</div>
-                            <div style="font-size: 0.9rem; font-weight: bold;">${leituraSelecionada.gospel}</div>
-                        </div>
-                    </div>
-                    
-                    <div style="font-size: 0.8rem; color: #6c6f6b; margin-bottom: 16px; text-align: center;">
-                        ${leituraSelecionada.resumo}
-                    </div>
-                    
-                    <div style="text-align: center;">
-                        <a href="${leituraSelecionada.ffozLink}" target="_blank" style="color: #b45309; font-size: 0.75rem; text-decoration: none; background: #fff7ed; padding: 8px 20px; border-radius: 40px; display: inline-block;">
-                            🔓 Criar conta gratuita na FFOZ e acessar o estudo →
-                        </a>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = `<div style="text-align: center; padding: 20px;">📅 Em breve, estudo semanal da FFOZ.</div>`;
-            }
-        }
-
-        function calcularDiasAteShabat(dataShabatStr) {
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
-            const dataShabat = new Date(dataShabatStr);
-            dataShabat.setHours(0, 0, 0, 0);
-            const diffTime = dataShabat - hoje;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays >= 0 ? diffDays : 0;
-        }
-        
-        // ==================== OBSERVADOR ====================
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 usuarioAtual = user;
                 const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
                 const userData = userDoc.data();
-                usuarioNickname = userData?.nickname || user.email.split('@')[0];
+                const nickname = userData?.nickname || user.email.split('@')[0];
                 splashScreen.style.display = 'none';
                 appScreen.style.display = 'block';
-                userNicknameSpan.textContent = usuarioNickname;
-                userEmailSpan.textContent = user.email;
+                if (userNicknameSpan) userNicknameSpan.textContent = nickname;
+                if (userEmailSpan) userEmailSpan.textContent = user.email;
                 
                 await gerarCalendario();
                 await carregarTodasEstatisticas();
                 await carregarComentarios();
-                carregarSalmoDia();
-                carregarEstudoFFOZ();
                 
                 const btnEnviar = document.getElementById('btnEnviarMsg');
                 if (btnEnviar) {
@@ -629,7 +374,6 @@
         footer { text-align: center; margin-top: 40px; padding-top: 20px; font-size: 0.7rem; color: #6c6f6b; border-top: 1px solid #e7e5e4; }
         
         .versiculo { font-style: italic; color: #6c6f6b; font-size: 0.85rem; text-align: center; margin-bottom: 20px; }
-        
         textarea { width: 100%; padding: 12px; border-radius: 20px; border: 1px solid #e7e5e4; background: #fef9f0; font-family: inherit; resize: vertical; margin-bottom: 8px; }
     </style>
 </head>
@@ -646,24 +390,6 @@
         <div class="top-bar">
             <h1 style="font-size: 1.5rem;">📆 Calendário do Jornaleiro</h1>
             <div><span id="userNickname" style="font-weight: bold; color: #b45309;"></span><span id="userEmail" style="font-size: 0.7rem; color: #6c6f6b; margin-left: 8px;"></span><button class="btn-small" onclick="logout()" style="margin-left: 10px;">Sair</button></div>
-        </div>
-        
-        <!-- SALMO DO DIA -->
-        <div class="card-section" id="salmoDiaSection">
-            <h2>📖 Salmo do Dia - Shir Shel Yom</h2>
-            <div class="aviso">🎵 Cada dia da semana tem um Salmo específico - tradição do Templo de Jerusalém</div>
-            <div id="conteudoSalmo" style="background: #fef9f0; border-radius: 20px; padding: 20px; margin-top: 16px;">
-                <div style="text-align: center; color: #6c6f6b;">Carregando salmo...</div>
-            </div>
-        </div>
-        
-        <!-- ESTUDO FFOZ PARA SHABAT -->
-        <div class="card-section" id="estudoFFOZSection">
-            <h2>📖 Estudo da Semana - Torah Portions (FFOZ)</h2>
-            <div class="aviso">🕯️ Leitura coordenada da Torá, Profetas (Haftarah) e Evangelho - ciclo judaico anual</div>
-            <div id="conteudoEstudo" style="background: #fef9f0; border-radius: 20px; padding: 20px; margin-top: 16px;">
-                <div style="text-align: center; color: #6c6f6b;">Carregando estudo da semana...</div>
-            </div>
         </div>
         
         <div class="card-section">
@@ -694,7 +420,6 @@
             <div id="calendar"></div>
         </div>
 
-        <!-- MURAL DE ORAÇÕES -->
         <div class="card-section">
             <h2>✍️ Mural de Orações (Anônimo)</h2>
             <div class="aviso">🙏 Compartilhe um pedido, testemunho ou palavra de fé. Todos veem, ninguém sabe quem escreveu.</div>
