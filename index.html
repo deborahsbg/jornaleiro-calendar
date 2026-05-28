@@ -138,41 +138,55 @@
                 `;
             }
         }
-        <!-- PAINEL DE CONTAGEM PÚBLICO -->
-        <div class="card-section">
-            <h2>📊 Propósito em Números</h2>
-            <div class="aviso">🔥 Dados atualizados em tempo real - cada clique no calendário conta!</div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="homeTotalParticipantes">0</div>
-                    <div class="stat-label">Participantes</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="homeTotalMarcacoes">0</div>
-                    <div class="stat-label">Total de Marcações</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="homeMediaPorPessoa">0</div>
-                    <div class="stat-label">Média por Pessoa</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="homeHojeMarcaram">0</div>
-                    <div class="stat-label">Marcaram Hoje</div>
-                </div>
-            </div>
-            <div style="margin: 16px 0;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span>📅 Dias decorridos: <strong id="homeDiasDecorridos">0</strong> / <strong id="homeDiasRestantes">384</strong></span>
-                    <span><strong id="homePercentualJornada">0</strong>% completo</span>
-                </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-fill" id="homeProgressoJornadaFill"></div>
-                </div>
-            </div>
-            <div style="text-align: center; margin-top: 8px;">
-                <span class="aviso">📅 Início: 16/05/2026 | 📆 Término previsto: ~03/06/2027</span>
-            </div>
-        </div>
+
+        // ========== PAINEL DE CONTAGEM PÚBLICO ==========
+        async function carregarContagemPublica() {
+            try {
+                const usuariosSnapshot = await getDocs(collection(db, 'usuarios'));
+                const totalUsuarios = usuariosSnapshot.size;
+                const totalParticipantesEl = document.getElementById('homeTotalParticipantes');
+                if (totalParticipantesEl) totalParticipantesEl.textContent = totalUsuarios;
+                
+                const diasSnapshot = await getDocs(collection(db, 'dias'));
+                let totalMarcacoes = 0;
+                diasSnapshot.forEach(doc => { totalMarcacoes += doc.data().total || 0; });
+                const totalMarcacoesEl = document.getElementById('homeTotalMarcacoes');
+                if (totalMarcacoesEl) totalMarcacoesEl.textContent = totalMarcacoes;
+                
+                const media = totalUsuarios > 0 ? (totalMarcacoes / totalUsuarios).toFixed(1) : 0;
+                const mediaEl = document.getElementById('homeMediaPorPessoa');
+                if (mediaEl) mediaEl.textContent = media;
+                
+                const hoje = new Date().toISOString().split('T')[0];
+                const hojeDoc = await getDoc(doc(db, 'dias', hoje));
+                const marcaramHoje = hojeDoc.data()?.total || 0;
+                const hojeEl = document.getElementById('homeHojeMarcaram');
+                if (hojeEl) hojeEl.textContent = marcaramHoje;
+                
+                const DATA_INICIO = new Date(2026, 4, 16, 22, 0, 0);
+                const DIAS_TOTAIS = 384;
+                const diffTime = new Date() - DATA_INICIO;
+                const diasDecorridos = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                const diasRestantes = Math.max(0, DIAS_TOTAIS - diasDecorridos);
+                const percentual = Math.min(100, (diasDecorridos / DIAS_TOTAIS) * 100);
+                
+                const diasDecorridosEl = document.getElementById('homeDiasDecorridos');
+                const diasRestantesEl = document.getElementById('homeDiasRestantes');
+                const percentualEl = document.getElementById('homePercentualJornada');
+                const progressoFill = document.getElementById('homeProgressoJornadaFill');
+                
+                if (diasDecorridosEl) diasDecorridosEl.textContent = diasDecorridos;
+                if (diasRestantesEl) diasRestantesEl.textContent = diasRestantes;
+                if (percentualEl) percentualEl.textContent = Math.floor(percentual);
+                if (progressoFill) progressoFill.style.width = percentual + '%';
+                
+            } catch (error) {
+                console.error('Erro ao carregar contagem pública:', error);
+            }
+        }
+
+        setInterval(carregarContagemPublica, 30000);
+
         // ========== MURO DE ORAÇÕES (Threads) ==========
         function setupContador(textareaId, contadorId) {
             const textarea = document.getElementById(textareaId);
@@ -237,59 +251,7 @@
                 await updateDoc(ref, { likes: arrayUnion(usuarioAtual.uid) });
             }
         }
-        // ========== PAINEL DE CONTAGEM PÚBLICO ==========
-async function carregarContagemPublica() {
-    try {
-        // Total de participantes
-        const usuariosSnapshot = await getDocs(collection(db, 'usuarios'));
-        const totalUsuarios = usuariosSnapshot.size;
-        const totalParticipantesEl = document.getElementById('homeTotalParticipantes');
-        if (totalParticipantesEl) totalParticipantesEl.textContent = totalUsuarios;
-        
-        // Total de marcações
-        const diasSnapshot = await getDocs(collection(db, 'dias'));
-        let totalMarcacoes = 0;
-        diasSnapshot.forEach(doc => { totalMarcacoes += doc.data().total || 0; });
-        const totalMarcacoesEl = document.getElementById('homeTotalMarcacoes');
-        if (totalMarcacoesEl) totalMarcacoesEl.textContent = totalMarcacoes;
-        
-        // Média por pessoa
-        const media = totalUsuarios > 0 ? (totalMarcacoes / totalUsuarios).toFixed(1) : 0;
-        const mediaEl = document.getElementById('homeMediaPorPessoa');
-        if (mediaEl) mediaEl.textContent = media;
-        
-        // Quantos marcaram hoje
-        const hoje = new Date().toISOString().split('T')[0];
-        const hojeDoc = await getDoc(doc(db, 'dias', hoje));
-        const marcaramHoje = hojeDoc.data()?.total || 0;
-        const hojeEl = document.getElementById('homeHojeMarcaram');
-        if (hojeEl) hojeEl.textContent = marcaramHoje;
-        
-        // Dias da jornada
-        const DATA_INICIO = new Date(2026, 4, 16, 22, 0, 0);
-        const DIAS_TOTAIS = 384;
-        const diffTime = new Date() - DATA_INICIO;
-        const diasDecorridos = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-        const diasRestantes = Math.max(0, DIAS_TOTAIS - diasDecorridos);
-        const percentual = Math.min(100, (diasDecorridos / DIAS_TOTAIS) * 100);
-        
-        const diasDecorridosEl = document.getElementById('homeDiasDecorridos');
-        const diasRestantesEl = document.getElementById('homeDiasRestantes');
-        const percentualEl = document.getElementById('homePercentualJornada');
-        const progressoFill = document.getElementById('homeProgressoJornadaFill');
-        
-        if (diasDecorridosEl) diasDecorridosEl.textContent = diasDecorridos;
-        if (diasRestantesEl) diasRestantesEl.textContent = diasRestantes;
-        if (percentualEl) percentualEl.textContent = Math.floor(percentual);
-        if (progressoFill) progressoFill.style.width = percentual + '%';
-        
-    } catch (error) {
-        console.error('Erro ao carregar contagem pública:', error);
-    }
-}
 
-// Atualizar a cada 30 segundos (opcional)
-setInterval(carregarContagemPublica, 30000);
         function carregarMural() {
             const container = document.getElementById('listaPosts');
             if (!container) return;
@@ -425,7 +387,6 @@ setInterval(carregarContagemPublica, 30000);
         carregarEstudoFFOZ();
         carregarContagemPublica();
         carregarMural();
-        
     </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -446,6 +407,12 @@ setInterval(carregarContagemPublica, 30000);
         .versiculo { font-style: italic; color: #6c6f6b; font-size: 0.85rem; text-align: center; margin-bottom: 20px; }
         textarea { width: 100%; padding: 12px; border-radius: 20px; border: 1px solid #e7e5e4; background: #fef9f0; font-family: inherit; resize: vertical; margin-bottom: 8px; }
         .auth-status { font-size: 0.7rem; color: #6c6f6b; margin-top: 8px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: #fff7ed; border-radius: 20px; padding: 16px; text-align: center; }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #b45309; }
+        .stat-label { font-size: 0.7rem; color: #6c6f6b; margin-top: 4px; }
+        .progress-bar-bg { background: #e7e5e4; border-radius: 20px; height: 16px; overflow: hidden; margin: 12px 0; }
+        .progress-fill { background: #b45309; width: 0%; height: 100%; transition: width 0.3s; }
     </style>
 </head>
 <body>
@@ -469,6 +436,42 @@ setInterval(carregarContagemPublica, 30000);
             </div>
         </div>
         <div class="auth-status" id="authStatus"></div>
+
+        <!-- PAINEL DE CONTAGEM PÚBLICO -->
+        <div class="card-section">
+            <h2>📊 Propósito em Números</h2>
+            <div class="aviso">🔥 Dados atualizados em tempo real - cada clique no calendário conta!</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="homeTotalParticipantes">0</div>
+                    <div class="stat-label">Participantes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="homeTotalMarcacoes">0</div>
+                    <div class="stat-label">Total de Marcações</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="homeMediaPorPessoa">0</div>
+                    <div class="stat-label">Média por Pessoa</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="homeHojeMarcaram">0</div>
+                    <div class="stat-label">Marcaram Hoje</div>
+                </div>
+            </div>
+            <div style="margin: 16px 0;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>📅 Dias decorridos: <strong id="homeDiasDecorridos">0</strong> / <strong id="homeDiasRestantes">384</strong></span>
+                    <span><strong id="homePercentualJornada">0</strong>% completo</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-fill" id="homeProgressoJornadaFill"></div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 8px;">
+                <span class="aviso">📅 Início: 16/05/2026 | 📆 Término previsto: ~03/06/2027</span>
+            </div>
+        </div>
 
         <!-- SALMO DO DIA -->
         <div class="card-section">
@@ -518,7 +521,3 @@ setInterval(carregarContagemPublica, 30000);
             </div>
         </div>
     </div>
-    <footer><p>🙏 Propósito de oração e jejum - 384 dias - Início: 16/05/2026</p></footer>
-</div>
-</body>
-</html>
