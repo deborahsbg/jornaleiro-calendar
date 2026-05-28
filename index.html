@@ -418,6 +418,139 @@
             
             container.innerHTML = html;
         }
+
+        // ========== ESTUDO FFOZ PARA SHABAT ==========
+const leiturasFFOZ = {
+    "2026-05-30": {
+        parasha: "Naso",
+        torah: "Números 4:21-7:89",
+        haftarah: "Juízes 13:2-25",
+        gospel: "João 7:53-8:11",
+        resumo: "Naso (Eleva) trata da consagração dos levitas, da lei do nazireado e da bênção sacerdotal.",
+        ffozLink: "https://ffoz.org/torahportions/parashah/naso"
+    },
+    "2026-06-06": {
+        parasha: "Beha'alotcha",
+        torah: "Números 8:1-12:16",
+        haftarah: "Zacarias 2:14-4:7",
+        gospel: "Lucas 17:11-18:14",
+        resumo: "Beha'alotcha (Quando você acender) fala sobre o acender das lâmpadas do candelabro, a consagração dos levitas e a reclamação do povo no deserto.",
+        ffozLink: "https://ffoz.org/torahportions/parashah/behaalotcha"
+    },
+    "2026-06-13": {
+        parasha: "Shelach Lecha",
+        torah: "Números 13:1-15:41",
+        haftarah: "Josué 2:1-24",
+        gospel: "Mateus 10:1-14",
+        resumo: "Shelach Lecha (Envia para ti) relata o episódio dos espiões enviados a Canaã e a consequente condenação do povo a peregrinar por quarenta anos no deserto.",
+        ffozLink: "https://ffoz.org/torahportions/parashah/shelach"
+    },
+    "2026-06-20": {
+        parasha: "Korach",
+        torah: "Números 16:1-18:32",
+        haftarah: "I Samuel 11:14-12:22",
+        gospel: "Marcos 9:38-50",
+        resumo: "Korach narra a rebelião de Corá contra a liderança de Moisés e Arão, e a confirmação divina do sacerdócio levítico.",
+        ffozLink: "https://ffoz.org/torahportions/parashah/korach"
+    },
+    "2026-06-27": {
+        parasha: "Chukat",
+        torah: "Números 19:1-22:1",
+        haftarah: "Juízes 11:1-33",
+        gospel: "João 3:9-21",
+        resumo: "Chukat (Estatuto) apresenta a lei da novilha vermelha, a morte de Miriã e Arão, e a derrota dos reis Siom e Ogue.",
+        ffozLink: "https://ffoz.org/torahportions/parashah/chukat"
+    },
+    "2026-07-04": {
+        parasha: "Balak",
+        torah: "Números 22:2-25:9",
+        haftarah: "Miqueias 5:6-6:8",
+        gospel: "Mateus 21:1-11",
+        resumo: "Balak conta a história do rei Balaque que contrata o profeta Balaão para amaldiçoar Israel, mas Deus transforma a maldição em bênção.",
+        ffozLink: "https://ffoz.org/torahportions/parashah/balak"
+    }
+};
+
+function carregarEstudoFFOZ() {
+    const container = document.getElementById('conteudoEstudo');
+    if (!container) return;
+    
+    const hoje = new Date();
+    let leituraSelecionada = null;
+    let dataSelecionada = null;
+    
+    for (const [data, leitura] of Object.entries(leiturasFFOZ)) {
+        const dataShabat = new Date(data);
+        if (dataShabat >= hoje) {
+            leituraSelecionada = leitura;
+            dataSelecionada = data;
+            break;
+        }
+    }
+    
+    if (!leituraSelecionada) {
+        const ultimaData = Object.keys(leiturasFFOZ).sort().pop();
+        leituraSelecionada = leiturasFFOZ[ultimaData];
+        dataSelecionada = ultimaData;
+    }
+    
+    if (leituraSelecionada) {
+        const dataFormatada = formatarDataBr(dataSelecionada);
+        const diasAteShabat = calcularDiasAteShabat(dataSelecionada);
+        
+        let textoPrevisao = '';
+        if (diasAteShabat === 0) textoPrevisao = '🕯️ Leitura desta semana (Shabat hoje)';
+        else if (diasAteShabat === 1) textoPrevisao = '🕯️ Próxima leitura amanhã (Shabat)';
+        else textoPrevisao = `🕯️ Próxima leitura em ${diasAteShabat} dias (${dataFormatada})`;
+        
+        container.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px;">
+                <div style="background: #2c3e2f; color: #fef3c7; padding: 6px 16px; border-radius: 40px; font-size: 0.85rem;">
+                    📜 Parashá ${leituraSelecionada.parasha}
+                </div>
+                <div style="font-size: 0.65rem; color: #6c6f6b;">${textoPrevisao}</div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                <div style="background: #fff7ed; border-radius: 16px; padding: 12px; text-align: center;">
+                    <div style="font-weight: bold; color: #b45309; font-size: 0.7rem;">📜 TORAH</div>
+                    <div style="font-size: 0.9rem; font-weight: bold;">${leituraSelecionada.torah}</div>
+                </div>
+                <div style="background: #fff7ed; border-radius: 16px; padding: 12px; text-align: center;">
+                    <div style="font-weight: bold; color: #b45309; font-size: 0.7rem;">📖 HAFTARAH (PROFETAS)</div>
+                    <div style="font-size: 0.9rem; font-weight: bold;">${leituraSelecionada.haftarah}</div>
+                </div>
+                <div style="background: #fff7ed; border-radius: 16px; padding: 12px; text-align: center;">
+                    <div style="font-weight: bold; color: #b45309; font-size: 0.7rem;">✝️ GOSPEL (EVANGELHO)</div>
+                    <div style="font-size: 0.9rem; font-weight: bold;">${leituraSelecionada.gospel}</div>
+                </div>
+            </div>
+            
+            <div style="font-size: 0.8rem; color: #6c6f6b; margin-bottom: 16px; text-align: center;">
+                ${leituraSelecionada.resumo}
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="${leituraSelecionada.ffozLink}" target="_blank" style="color: #b45309; font-size: 0.75rem; text-decoration: none; background: #fff7ed; padding: 8px 20px; border-radius: 40px; display: inline-block;">
+                    📖 Ver estudo completo no site da FFOZ →
+                </a>
+            </div>
+        `;
+    } else {
+        container.innerHTML = `<div style="text-align: center; padding: 20px;">📅 Em breve, estudo semanal da FFOZ.</div>`;
+    }
+}
+
+function calcularDiasAteShabat(dataShabatStr) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const dataShabat = new Date(dataShabatStr);
+    dataShabat.setHours(0, 0, 0, 0);
+    const diffTime = dataShabat - hoje;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 ? diffDays : 0;
+}
+        
         // ==================== OBSERVADOR ====================
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -435,6 +568,7 @@
                 await carregarTodasEstatisticas();
                 await carregarComentarios();
                 carregarSalmoDia();
+                carregarEstudoFFOZ();
                 
                 // Configurar botão do mural
                 const btnEnviar = document.getElementById('btnEnviarMsg');
