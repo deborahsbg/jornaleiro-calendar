@@ -7,7 +7,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, runTransaction, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, runTransaction, orderBy, limit, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyADaKwc0YIOKWeP01mgmjkhufqbdeqK3ok",
@@ -23,21 +23,18 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // Constantes
-        const DATA_INICIO = new Date(2026, 4, 16, 22, 0, 0); // 16/05/2026 22h
+        const DATA_INICIO = new Date(2026, 4, 16, 22, 0, 0);
         const DIAS_TOTAIS = 384;
         
         let usuarioAtual = null;
         let usuarioNickname = null;
 
-        // Elementos DOM
         const splashScreen = document.getElementById('splashScreen');
         const appScreen = document.getElementById('appScreen');
         const userNicknameSpan = document.getElementById('userNickname');
         const userEmailSpan = document.getElementById('userEmail');
         const calendarDiv = document.getElementById('calendar');
         
-        // Elementos de estatísticas
         const totalParticipantesSpan = document.getElementById('totalParticipantes');
         const totalMarcacoesSpan = document.getElementById('totalMarcacoes');
         const mediaPorPessoaSpan = document.getElementById('mediaPorPessoa');
@@ -48,7 +45,6 @@
         const hojeMarcaramSpan = document.getElementById('hojeMarcaram');
         const topDiasDiv = document.getElementById('topDias');
 
-        // ========== FUNÇÕES DE CÁLCULO ==========
         function calcularDiasJornada() {
             const hoje = new Date();
             const diffTime = hoje - DATA_INICIO;
@@ -58,7 +54,6 @@
             return { diasDecorridos, diasRestantes, percentual };
         }
 
-        // ========== LOGIN ==========
         window.loginComGoogle = async () => {
             try {
                 const result = await signInWithPopup(auth, provider);
@@ -71,11 +66,7 @@
                     while (!nickname || nickname.trim() === '') {
                         nickname = prompt('Nickname não pode ficar vazio:');
                     }
-                    await setDoc(userDocRef, {
-                        email: user.email,
-                        nickname: nickname,
-                        createdAt: new Date().toISOString()
-                    });
+                    await setDoc(userDocRef, { email: user.email, nickname: nickname, createdAt: new Date().toISOString() });
                     alert(`✅ Bem-vindo, ${nickname}!`);
                 } else {
                     alert(`✅ Bem-vindo de volta, ${docSnap.data().nickname}!`);
@@ -87,7 +78,6 @@
 
         window.logout = async () => { await signOut(auth); };
 
-        // ========== MARCAR DIA ==========
         window.marcarDia = async (dataStr, buttonElement) => {
             if (!usuarioAtual) return;
             
@@ -99,11 +89,8 @@
                 await runTransaction(db, async (transaction) => {
                     const diaDoc = await transaction.get(diaRef);
                     const novoTotal = (diaDoc.data()?.total || 1) - 1;
-                    if (novoTotal <= 0) {
-                        transaction.delete(diaRef);
-                    } else {
-                        transaction.set(diaRef, { total: novoTotal, data: dataStr }, { merge: true });
-                    }
+                    if (novoTotal <= 0) { transaction.delete(diaRef); }
+                    else { transaction.set(diaRef, { total: novoTotal, data: dataStr }, { merge: true }); }
                     transaction.delete(userMarcouRef);
                 });
                 buttonElement.classList.remove('marked');
@@ -124,39 +111,30 @@
             await atualizarContadoresCalendario();
         };
 
-        // ========== CARREGAR ESTATÍSTICAS COMPLETAS ==========
         async function carregarTodasEstatisticas() {
-            // Total de participantes
             const usuariosSnapshot = await getDocs(collection(db, 'usuarios'));
             const totalUsuarios = usuariosSnapshot.size;
             totalParticipantesSpan.textContent = totalUsuarios;
             
-            // Total de marcações (soma de todos os dias)
             const diasSnapshot = await getDocs(collection(db, 'dias'));
             let totalMarcacoes = 0;
-            diasSnapshot.forEach(doc => {
-                totalMarcacoes += doc.data().total || 0;
-            });
+            diasSnapshot.forEach(doc => { totalMarcacoes += doc.data().total || 0; });
             totalMarcacoesSpan.textContent = totalMarcacoes;
             
-            // Média por pessoa
             const media = totalUsuarios > 0 ? (totalMarcacoes / totalUsuarios).toFixed(1) : 0;
             mediaPorPessoaSpan.textContent = media;
             
-            // Dias da jornada
             const { diasDecorridos, diasRestantes, percentual } = calcularDiasJornada();
             diasDecorridosSpan.textContent = diasDecorridos;
             diasRestantesSpan.textContent = diasRestantes;
             progressoJornadaFill.style.width = percentual + '%';
             percentualJornadaSpan.textContent = Math.floor(percentual);
             
-            // Quantos marcaram hoje
             const hoje = new Date().toISOString().split('T')[0];
             const hojeDoc = await getDoc(doc(db, 'dias', hoje));
             const marcaramHoje = hojeDoc.data()?.total || 0;
             hojeMarcaramSpan.textContent = marcaramHoje;
             
-            // Top 5 dias mais marcados
             const q = query(collection(db, 'dias'), orderBy('total', 'desc'), limit(5));
             const topSnapshot = await getDocs(q);
             topDiasDiv.innerHTML = '';
@@ -176,11 +154,9 @@
 
         function formatarDataBr(dataStr) {
             const partes = dataStr.split('-');
-            if (partes.length !== 3) return dataStr;
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
-        // ========== ATUALIZAR CALENDÁRIO ==========
         async function atualizarContadoresCalendario() {
             const diasSnapshot = await getDocs(collection(db, 'dias'));
             const contadores = {};
@@ -200,119 +176,158 @@
             });
         }
 
-        // ========== GERAR CALENDÁRIO ==========
-        async function gerarCalendario() {
-    const meses = [
-        { nome: "MAIO 2026", dias: 31, inicio: 5, ano: 2026, mesNum: 4, eventos: { 21: "🕯️ Shavuot", 22: "🕯️ Shavuot", 23: "🕯️ Shavuot ⭐" } },
-        { nome: "JUNHO 2026", dias: 30, inicio: 1, ano: 2026, mesNum: 5, eventos: {} },
-        { nome: "JULHO 2026", dias: 31, inicio: 3, ano: 2026, mesNum: 6, eventos: { 22: "🕯️ Tisha B'Av", 23: "🕯️ Tisha B'Av" } },
-        { nome: "AGOSTO 2026", dias: 31, inicio: 6, ano: 2026, mesNum: 7, eventos: {} },
-        { nome: "SETEMBRO 2026", dias: 30, inicio: 2, ano: 2026, mesNum: 8, eventos: { 11: "🕯️ Rosh Hashaná", 12: "🕯️ Rosh Hashaná ⭐", 13: "🕯️ Rosh Hashaná", 20: "🕯️ Yom Kippur", 21: "🕯️ Yom Kippur", 25: "🕯️ Sucot ⭐", 26: "🕯️ Sucot ⭐", 27: "🕯️ Sucot", 28: "🕯️ Sucot", 29: "🕯️ Sucot", 30: "🕯️ Sucot" } },
-        { nome: "OUTUBRO 2026", dias: 31, inicio: 4, ano: 2026, mesNum: 9, eventos: { 1: "🕯️ Sucot", 2: "🕯️ Shemini Atzeret ⭐", 3: "🕯️ Simchat Torá", 4: "⭐" } },
-        { nome: "NOVEMBRO 2026", dias: 30, inicio: 0, ano: 2026, mesNum: 10, eventos: {} },
-        { nome: "DEZEMBRO 2026", dias: 31, inicio: 2, ano: 2026, mesNum: 11, eventos: { 4: "🕯️ Chanucá ⭐", 5: "🕯️ Chanucá ⭐", 6: "🕯️ Chanucá", 7: "🕯️ Chanucá", 8: "🕯️ Chanucá", 9: "🕯️ Chanucá", 10: "🕯️ Chanucá", 11: "🕯️ Chanucá", 12: "🕯️ Chanucá ⭐" } },
-        { nome: "JANEIRO 2027", dias: 31, inicio: 5, ano: 2027, mesNum: 0, eventos: { 22: "🕯️ Tu BiShvat", 23: "🕯️ Tu BiShvat ⭐" } },
-        { nome: "FEVEREIRO 2027", dias: 28, inicio: 1, ano: 2027, mesNum: 1, eventos: {} },
-        { nome: "MARÇO 2027", dias: 31, inicio: 1, ano: 2027, mesNum: 2, eventos: { 22: "🕯️ Purim", 23: "🕯️ Purim" } },
-        { nome: "ABRIL 2027", dias: 30, inicio: 4, ano: 2027, mesNum: 3, eventos: { 21: "🕯️ Pêssach", 22: "🕯️ Pêssach", 23: "🕯️ Pêssach ⭐", 24: "🕯️ Pêssach", 25: "🕯️ Pêssach", 26: "🕯️ Pêssach", 27: "🕯️ Pêssach", 28: "🕯️ Pêssach" } },
-        { nome: "MAIO 2027", dias: 31, inicio: 6, ano: 2027, mesNum: 4, eventos: { 24: "🕯️ Lag BaOmer", 25: "🕯️ Lag BaOmer" } },
-        { nome: "JUNHO 2027", dias: 10, inicio: 2, ano: 2027, mesNum: 5, eventos: { 10: "🕯️ Shavuot", 11: "🕯️ Shavuot ⭐" } }
-    ];
-    
-    let marcacoesUsuario = new Set();
-    if (usuarioAtual) {
-        const q = query(collection(db, 'marcacoes_usuarios'), where('uid', '==', usuarioAtual.uid));
-        const snapshot = await getDocs(q);
-        snapshot.forEach(doc => marcacoesUsuario.add(doc.id.split('_')[1]));
-    }
-    
-    const diasSnapshot = await getDocs(collection(db, 'dias'));
-    const contadores = {};
-    diasSnapshot.forEach(doc => { contadores[doc.id] = doc.data().total; });
-    
-    calendarDiv.innerHTML = '';
-    
-    for (const mes of meses) {
-        const monthDiv = document.createElement('div');
-        monthDiv.style.marginBottom = '20px';
-        monthDiv.style.border = '1px solid #e7e5e4';
-        monthDiv.style.borderRadius = '24px';
-        monthDiv.style.overflow = 'hidden';
-        
-        const header = document.createElement('div');
-        header.style.cssText = 'background: #2c3e2f; color: #fef3c7; padding: 12px 16px; font-weight: bold; cursor: pointer;';
-        header.innerHTML = `📅 ${mes.nome} <span style="float:right;">▼</span>`;
-        header.onclick = () => { const body = monthDiv.querySelector('.month-body'); body.style.display = body.style.display === 'grid' ? 'none' : 'grid'; };
-        monthDiv.appendChild(header);
-        
-        const body = document.createElement('div');
-        body.className = 'month-body';
-        body.style.cssText = 'display: none; padding: 16px; grid-template-columns: repeat(7, 1fr); gap: 6px;';
-        
-        const diasSemana = ['D','S','T','Q','Q','S','S'];
-        diasSemana.forEach(dia => { const diaDiv = document.createElement('div'); diaDiv.textContent = dia; diaDiv.style.cssText = 'font-weight: bold; color: #b45309; text-align: center;'; body.appendChild(diaDiv); });
-        
-        for (let i = 0; i < mes.inicio; i++) { const empty = document.createElement('div'); body.appendChild(empty); }
-        
-        for (let d = 1; d <= mes.dias; d++) {
-            const dataStr = `${mes.ano}-${String(mes.mesNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const total = contadores[dataStr] || 0;
-            const usuarioMarcou = marcacoesUsuario.has(dataStr);
-            const evento = mes.eventos[d] || '';
+        // ==================== MURAL DE ORAÇÕES (NOVO) ====================
+        async function carregarComentarios() {
+            const area = document.getElementById('areaMensagens');
+            if (!area) return;
             
-            const dayDiv = document.createElement('div');
-            dayDiv.className = 'day-cell';
-            dayDiv.setAttribute('data-date', dataStr);
-            
-            let bgColor = '#fef9f0';
-            let textColor = '#1e2a2e';
-            if (usuarioMarcou) { bgColor = '#b45309'; textColor = 'white'; }
-            if (evento.includes('🕯️') && !usuarioMarcou) { bgColor = '#d97706'; textColor = 'white'; }
-            if (evento.includes('⭐') && !usuarioMarcou) { bgColor = '#4b5563'; textColor = 'white'; }
-            
-            dayDiv.style.cssText = `background: ${bgColor}; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db; color: ${textColor};`;
-            if (usuarioMarcou && (evento.includes('🕯️') || evento.includes('⭐'))) dayDiv.style.outline = '2px solid #fbbf24';
-            
-            const dayNumber = document.createElement('div');
-            dayNumber.style.fontWeight = 'bold';
-            dayNumber.style.fontSize = '1rem';
-            dayNumber.textContent = d;
-            dayDiv.appendChild(dayNumber);
-            
-            if (evento) {
-                const eventSpan = document.createElement('div');
-                eventSpan.style.fontSize = '0.55rem';
-                eventSpan.style.marginTop = '4px';
-                eventSpan.textContent = evento;
-                dayDiv.appendChild(eventSpan);
-            }
-            
-            if (total > 0) {
-                const contadorSpan = document.createElement('div');
-                contadorSpan.className = 'contador-dia';
-                contadorSpan.style.cssText = 'font-size: 0.55rem; margin-top: 2px;';
-                contadorSpan.textContent = `🔥 ${total}`;
-                dayDiv.appendChild(contadorSpan);
-            }
-            
-            dayDiv.onclick = (function(ds, el) { return () => marcarDia(ds, el); })(dataStr, dayDiv);
-            body.appendChild(dayDiv);
+            const q = query(collection(db, 'comentarios'), orderBy('createdAt', 'desc'));
+            onSnapshot(q, (snapshot) => {
+                area.innerHTML = '';
+                if (snapshot.empty) {
+                    area.innerHTML = '<div style="text-align:center; padding:20px;">🙏 Nenhuma oração compartilhada ainda. Seja o primeiro.</div>';
+                    return;
+                }
+                snapshot.forEach(doc => {
+                    const comentario = doc.data();
+                    const div = document.createElement('div');
+                    div.style.cssText = 'background: #fff7ed; border-left: 4px solid #b45309; padding: 12px; margin-bottom: 10px; border-radius: 12px;';
+                    div.innerHTML = `📝 ${escapeHtml(comentario.texto)}<div style="font-size: 0.6rem; color: #b45309; margin-top: 6px;">${new Date(comentario.createdAt).toLocaleString()}</div>`;
+                    area.appendChild(div);
+                });
+            });
         }
-        monthDiv.appendChild(body);
-        calendarDiv.appendChild(monthDiv);
-    }
-    
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
-    const monthBodies = document.querySelectorAll('.month-body');
-    for (let i = 0; i < meses.length; i++) {
-        if (meses[i].ano === anoAtual && meses[i].mesNum === mesAtual && monthBodies[i]) { monthBodies[i].style.display = 'grid'; break; }
-    }
-    if (monthBodies[0] && !document.querySelector('.month-body[style*="grid"]')) { monthBodies[0].style.display = 'grid'; }
-}
 
-        // ========== OBSERVADOR ==========
+        async function enviarComentario(texto) {
+            if (!usuarioAtual) { alert('Faça login para escrever.'); return false; }
+            try {
+                await addDoc(collection(db, 'comentarios'), { texto: texto.trim(), createdAt: new Date().toISOString() });
+                return true;
+            } catch (error) {
+                alert('Erro ao enviar.');
+                return false;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ==================== GERAR CALENDÁRIO ====================
+        async function gerarCalendario() {
+            const meses = [
+                { nome: "MAIO 2026", dias: 31, inicio: 5, ano: 2026, mesNum: 4, eventos: { 21: "🕯️ Shavuot", 22: "🕯️ Shavuot", 23: "🕯️ Shavuot ⭐" } },
+                { nome: "JUNHO 2026", dias: 30, inicio: 1, ano: 2026, mesNum: 5, eventos: {} },
+                { nome: "JULHO 2026", dias: 31, inicio: 3, ano: 2026, mesNum: 6, eventos: { 22: "🕯️ Tisha B'Av", 23: "🕯️ Tisha B'Av" } },
+                { nome: "AGOSTO 2026", dias: 31, inicio: 6, ano: 2026, mesNum: 7, eventos: {} },
+                { nome: "SETEMBRO 2026", dias: 30, inicio: 2, ano: 2026, mesNum: 8, eventos: { 11: "🕯️ Rosh Hashaná", 12: "🕯️ Rosh Hashaná ⭐", 13: "🕯️ Rosh Hashaná", 20: "🕯️ Yom Kippur", 21: "🕯️ Yom Kippur", 25: "🕯️ Sucot ⭐", 26: "🕯️ Sucot ⭐", 27: "🕯️ Sucot", 28: "🕯️ Sucot", 29: "🕯️ Sucot", 30: "🕯️ Sucot" } },
+                { nome: "OUTUBRO 2026", dias: 31, inicio: 4, ano: 2026, mesNum: 9, eventos: { 1: "🕯️ Sucot", 2: "🕯️ Shemini Atzeret ⭐", 3: "🕯️ Simchat Torá", 4: "⭐" } },
+                { nome: "NOVEMBRO 2026", dias: 30, inicio: 0, ano: 2026, mesNum: 10, eventos: {} },
+                { nome: "DEZEMBRO 2026", dias: 31, inicio: 2, ano: 2026, mesNum: 11, eventos: { 4: "🕯️ Chanucá ⭐", 5: "🕯️ Chanucá ⭐", 6: "🕯️ Chanucá", 7: "🕯️ Chanucá", 8: "🕯️ Chanucá", 9: "🕯️ Chanucá", 10: "🕯️ Chanucá", 11: "🕯️ Chanucá", 12: "🕯️ Chanucá ⭐" } },
+                { nome: "JANEIRO 2027", dias: 31, inicio: 5, ano: 2027, mesNum: 0, eventos: { 22: "🕯️ Tu BiShvat", 23: "🕯️ Tu BiShvat ⭐" } },
+                { nome: "FEVEREIRO 2027", dias: 28, inicio: 1, ano: 2027, mesNum: 1, eventos: {} },
+                { nome: "MARÇO 2027", dias: 31, inicio: 1, ano: 2027, mesNum: 2, eventos: { 22: "🕯️ Purim", 23: "🕯️ Purim" } },
+                { nome: "ABRIL 2027", dias: 30, inicio: 4, ano: 2027, mesNum: 3, eventos: { 21: "🕯️ Pêssach", 22: "🕯️ Pêssach", 23: "🕯️ Pêssach ⭐", 24: "🕯️ Pêssach", 25: "🕯️ Pêssach", 26: "🕯️ Pêssach", 27: "🕯️ Pêssach", 28: "🕯️ Pêssach" } },
+                { nome: "MAIO 2027", dias: 31, inicio: 6, ano: 2027, mesNum: 4, eventos: { 24: "🕯️ Lag BaOmer", 25: "🕯️ Lag BaOmer" } },
+                { nome: "JUNHO 2027", dias: 10, inicio: 2, ano: 2027, mesNum: 5, eventos: { 10: "🕯️ Shavuot", 11: "🕯️ Shavuot ⭐" } }
+            ];
+            
+            let marcacoesUsuario = new Set();
+            if (usuarioAtual) {
+                const q = query(collection(db, 'marcacoes_usuarios'), where('uid', '==', usuarioAtual.uid));
+                const snapshot = await getDocs(q);
+                snapshot.forEach(doc => marcacoesUsuario.add(doc.id.split('_')[1]));
+            }
+            
+            const diasSnapshot = await getDocs(collection(db, 'dias'));
+            const contadores = {};
+            diasSnapshot.forEach(doc => { contadores[doc.id] = doc.data().total; });
+            
+            calendarDiv.innerHTML = '';
+            
+            for (const mes of meses) {
+                const monthDiv = document.createElement('div');
+                monthDiv.style.marginBottom = '20px';
+                monthDiv.style.border = '1px solid #e7e5e4';
+                monthDiv.style.borderRadius = '24px';
+                monthDiv.style.overflow = 'hidden';
+                
+                const header = document.createElement('div');
+                header.style.cssText = 'background: #2c3e2f; color: #fef3c7; padding: 12px 16px; font-weight: bold; cursor: pointer;';
+                header.innerHTML = `📅 ${mes.nome} <span style="float:right;">▼</span>`;
+                header.onclick = () => { const body = monthDiv.querySelector('.month-body'); body.style.display = body.style.display === 'grid' ? 'none' : 'grid'; };
+                monthDiv.appendChild(header);
+                
+                const body = document.createElement('div');
+                body.className = 'month-body';
+                body.style.cssText = 'display: none; padding: 16px; grid-template-columns: repeat(7, 1fr); gap: 6px;';
+                
+                const diasSemana = ['D','S','T','Q','Q','S','S'];
+                diasSemana.forEach(dia => { const diaDiv = document.createElement('div'); diaDiv.textContent = dia; diaDiv.style.cssText = 'font-weight: bold; color: #b45309; text-align: center;'; body.appendChild(diaDiv); });
+                
+                for (let i = 0; i < mes.inicio; i++) { const empty = document.createElement('div'); body.appendChild(empty); }
+                
+                for (let d = 1; d <= mes.dias; d++) {
+                    const dataStr = `${mes.ano}-${String(mes.mesNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const total = contadores[dataStr] || 0;
+                    const usuarioMarcou = marcacoesUsuario.has(dataStr);
+                    const evento = mes.eventos[d] || '';
+                    
+                    const dayDiv = document.createElement('div');
+                    dayDiv.className = 'day-cell';
+                    dayDiv.setAttribute('data-date', dataStr);
+                    
+                    let bgColor = '#fef9f0';
+                    let textColor = '#1e2a2e';
+                    if (usuarioMarcou) { bgColor = '#b45309'; textColor = 'white'; }
+                    if (evento.includes('🕯️') && !usuarioMarcou) { bgColor = '#d97706'; textColor = 'white'; }
+                    if (evento.includes('⭐') && !usuarioMarcou) { bgColor = '#4b5563'; textColor = 'white'; }
+                    
+                    dayDiv.style.cssText = `background: ${bgColor}; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db; color: ${textColor};`;
+                    if (usuarioMarcou && (evento.includes('🕯️') || evento.includes('⭐'))) dayDiv.style.outline = '2px solid #fbbf24';
+                    
+                    const dayNumber = document.createElement('div');
+                    dayNumber.style.fontWeight = 'bold';
+                    dayNumber.style.fontSize = '1rem';
+                    dayNumber.textContent = d;
+                    dayDiv.appendChild(dayNumber);
+                    
+                    if (evento) {
+                        const eventSpan = document.createElement('div');
+                        eventSpan.style.fontSize = '0.55rem';
+                        eventSpan.style.marginTop = '4px';
+                        eventSpan.textContent = evento;
+                        dayDiv.appendChild(eventSpan);
+                    }
+                    
+                    if (total > 0) {
+                        const contadorSpan = document.createElement('div');
+                        contadorSpan.className = 'contador-dia';
+                        contadorSpan.style.cssText = 'font-size: 0.55rem; margin-top: 2px;';
+                        contadorSpan.textContent = `🔥 ${total}`;
+                        dayDiv.appendChild(contadorSpan);
+                    }
+                    
+                    dayDiv.onclick = (function(ds, el) { return () => marcarDia(ds, el); })(dataStr, dayDiv);
+                    body.appendChild(dayDiv);
+                }
+                monthDiv.appendChild(body);
+                calendarDiv.appendChild(monthDiv);
+            }
+            
+            const hoje = new Date();
+            const mesAtual = hoje.getMonth();
+            const anoAtual = hoje.getFullYear();
+            const monthBodies = document.querySelectorAll('.month-body');
+            for (let i = 0; i < meses.length; i++) {
+                if (meses[i].ano === anoAtual && meses[i].mesNum === mesAtual && monthBodies[i]) { monthBodies[i].style.display = 'grid'; break; }
+            }
+            if (monthBodies[0] && !document.querySelector('.month-body[style*="grid"]')) { monthBodies[0].style.display = 'grid'; }
+        }
+
+        // ==================== OBSERVADOR ====================
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 usuarioAtual = user;
@@ -323,8 +338,23 @@
                 appScreen.style.display = 'block';
                 userNicknameSpan.textContent = usuarioNickname;
                 userEmailSpan.textContent = user.email;
+                
                 await gerarCalendario();
                 await carregarTodasEstatisticas();
+                await carregarComentarios();
+                
+                // Configurar botão do mural
+                const btnEnviar = document.getElementById('btnEnviarMsg');
+                if (btnEnviar) {
+                    btnEnviar.onclick = async () => {
+                        const texto = document.getElementById('msgAnonimo').value.trim();
+                        if (!texto) { alert('Escreva uma mensagem.'); return; }
+                        if (await enviarComentario(texto)) {
+                            document.getElementById('msgAnonimo').value = '';
+                            alert('✅ Oração enviada!');
+                        }
+                    };
+                }
             } else {
                 usuarioAtual = null;
                 splashScreen.style.display = 'flex';
@@ -362,6 +392,8 @@
         footer { text-align: center; margin-top: 40px; padding-top: 20px; font-size: 0.7rem; color: #6c6f6b; border-top: 1px solid #e7e5e4; }
         
         .versiculo { font-style: italic; color: #6c6f6b; font-size: 0.85rem; text-align: center; margin-bottom: 20px; }
+        
+        textarea { width: 100%; padding: 12px; border-radius: 20px; border: 1px solid #e7e5e4; background: #fef9f0; font-family: inherit; resize: vertical; margin-bottom: 8px; }
     </style>
 </head>
 <body>
@@ -379,7 +411,6 @@
             <div><span id="userNickname" style="font-weight: bold; color: #b45309;"></span><span id="userEmail" style="font-size: 0.7rem; color: #6c6f6b; margin-left: 8px;"></span><button class="btn-small" onclick="logout()" style="margin-left: 10px;">Sair</button></div>
         </div>
 
-        <!-- ESTATÍSTICAS PRINCIPAIS -->
         <div class="card-section">
             <h2>📊 Jornada do Jornaleiro</h2>
             <div class="stats-grid">
@@ -388,7 +419,6 @@
                 <div class="stat-card"><div class="stat-number" id="mediaPorPessoa">0</div><div class="stat-label">Média por Pessoa</div></div>
                 <div class="stat-card"><div class="stat-number" id="hojeMarcaram">0</div><div class="stat-label">Marcaram Hoje</div></div>
             </div>
-            
             <div style="margin: 16px 0;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                     <span>📅 Dias decorridos: <strong id="diasDecorridos">0</strong> / <strong id="diasRestantes">384</strong></span>
@@ -398,17 +428,26 @@
             </div>
         </div>
 
-        <!-- TOP DIAS -->
         <div class="card-section">
             <h2>🔥 Dias mais movimentados</h2>
             <div id="topDias"></div>
         </div>
 
-        <!-- CALENDÁRIO -->
         <div class="card-section">
             <h2>📅 Calendário Coletivo</h2>
             <div class="aviso">🔥 Clique em qualquer dia que você jejuou e orou. O número 🔥 mostra quantas pessoas marcaram aquele dia.</div>
             <div id="calendar"></div>
+        </div>
+
+        <!-- ==================== MURAL DE ORAÇÕES (NOVO) ==================== -->
+        <div class="card-section">
+            <h2>✍️ Mural de Orações (Anônimo)</h2>
+            <div class="aviso">🙏 Compartilhe um pedido, testemunho ou palavra de fé. Todos veem, ninguém sabe quem escreveu.</div>
+            <div id="areaMensagens" style="max-height: 400px; overflow-y: auto; margin-bottom: 16px;">
+                <div style="text-align: center; padding: 20px; color: #6c6f6b;">Carregando orações...</div>
+            </div>
+            <textarea id="msgAnonimo" rows="3" placeholder="Escreva seu pedido de oração..."></textarea>
+            <button id="btnEnviarMsg" class="btn" style="width: auto;">📨 Enviar oração</button>
         </div>
     </div>
     <footer><p>🙏 Propósito de oração e jejum - 384 dias - Início: 16/05/2026</p></footer>
