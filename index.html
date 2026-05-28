@@ -80,9 +80,7 @@
             if (!container || !salmo) return;
             const nomeDia = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Shabat'][diaSemana];
             let html = `<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 16px;"><div style="font-size: 1.2rem; font-weight: bold; color: #b45309;">✨ ${salmo.referencia}</div><div style="font-size: 0.7rem; color: #6c6f6b;">${nomeDia}</div></div><div style="font-style: italic; font-size: 0.9rem; line-height: 1.6; margin-bottom: 16px;">"${salmo.titulo}"</div><div style="font-size: 0.85rem; line-height: 1.5; white-space: pre-line; background: #fff7ed; padding: 16px; border-radius: 16px;">${salmo.texto}</div>`;
-            if (salmo.audioId) {
-                html += `<div style="margin-top: 16px; padding: 12px; background: #e7e5e4; border-radius: 20px;"><audio controls style="width: 100%;"><source src="https://drive.google.com/uc?export=download&id=${salmo.audioId}" type="audio/mpeg"></audio><div style="font-size: 0.6rem; color: #6c6f6b; margin-top: 8px; text-align: center;">🎶 Salmo musicado</div></div>`;
-            }
+            
             container.innerHTML = html;
         }
 
