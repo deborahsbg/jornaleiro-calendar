@@ -411,6 +411,7 @@ setInterval(carregarContagemPublica, 30000);
                 if (authStatus) authStatus.textContent = `Logado como ${usuarioNickname}`;
                 if (novoPostForm) novoPostForm.style.display = 'block';
                 configurarNovoPost();
+                await carregarContagemPublica();
             } else {
                 usuarioNickname = null;
                 splashScreen.style.display = 'flex';
@@ -422,7 +423,9 @@ setInterval(carregarContagemPublica, 30000);
         // Inicializar
         carregarSalmoDia();
         carregarEstudoFFOZ();
+        carregarContagemPublica();
         carregarMural();
+        
     </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
