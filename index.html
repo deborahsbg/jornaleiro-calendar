@@ -237,7 +237,59 @@
                 await updateDoc(ref, { likes: arrayUnion(usuarioAtual.uid) });
             }
         }
+        // ========== PAINEL DE CONTAGEM PÚBLICO ==========
+async function carregarContagemPublica() {
+    try {
+        // Total de participantes
+        const usuariosSnapshot = await getDocs(collection(db, 'usuarios'));
+        const totalUsuarios = usuariosSnapshot.size;
+        const totalParticipantesEl = document.getElementById('homeTotalParticipantes');
+        if (totalParticipantesEl) totalParticipantesEl.textContent = totalUsuarios;
+        
+        // Total de marcações
+        const diasSnapshot = await getDocs(collection(db, 'dias'));
+        let totalMarcacoes = 0;
+        diasSnapshot.forEach(doc => { totalMarcacoes += doc.data().total || 0; });
+        const totalMarcacoesEl = document.getElementById('homeTotalMarcacoes');
+        if (totalMarcacoesEl) totalMarcacoesEl.textContent = totalMarcacoes;
+        
+        // Média por pessoa
+        const media = totalUsuarios > 0 ? (totalMarcacoes / totalUsuarios).toFixed(1) : 0;
+        const mediaEl = document.getElementById('homeMediaPorPessoa');
+        if (mediaEl) mediaEl.textContent = media;
+        
+        // Quantos marcaram hoje
+        const hoje = new Date().toISOString().split('T')[0];
+        const hojeDoc = await getDoc(doc(db, 'dias', hoje));
+        const marcaramHoje = hojeDoc.data()?.total || 0;
+        const hojeEl = document.getElementById('homeHojeMarcaram');
+        if (hojeEl) hojeEl.textContent = marcaramHoje;
+        
+        // Dias da jornada
+        const DATA_INICIO = new Date(2026, 4, 16, 22, 0, 0);
+        const DIAS_TOTAIS = 384;
+        const diffTime = new Date() - DATA_INICIO;
+        const diasDecorridos = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+        const diasRestantes = Math.max(0, DIAS_TOTAIS - diasDecorridos);
+        const percentual = Math.min(100, (diasDecorridos / DIAS_TOTAIS) * 100);
+        
+        const diasDecorridosEl = document.getElementById('homeDiasDecorridos');
+        const diasRestantesEl = document.getElementById('homeDiasRestantes');
+        const percentualEl = document.getElementById('homePercentualJornada');
+        const progressoFill = document.getElementById('homeProgressoJornadaFill');
+        
+        if (diasDecorridosEl) diasDecorridosEl.textContent = diasDecorridos;
+        if (diasRestantesEl) diasRestantesEl.textContent = diasRestantes;
+        if (percentualEl) percentualEl.textContent = Math.floor(percentual);
+        if (progressoFill) progressoFill.style.width = percentual + '%';
+        
+    } catch (error) {
+        console.error('Erro ao carregar contagem pública:', error);
+    }
+}
 
+// Atualizar a cada 30 segundos (opcional)
+setInterval(carregarContagemPublica, 30000);
         function carregarMural() {
             const container = document.getElementById('listaPosts');
             if (!container) return;
