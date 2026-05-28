@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Calendário do Jornaleiro | Isaías 21</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, runTransaction, orderBy, limit, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -54,62 +48,47 @@
             return { diasDecorridos, diasRestantes, percentual };
         }
 
-        window.loginComGoogle = async () => {
+        // ========== VERIFICAR REDIRECT DO GOOGLE ==========
+        async function verificarRedirectLogin() {
             try {
-                const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-                const userDocRef = doc(db, 'usuarios', user.uid);
-                const docSnap = await getDoc(userDocRef);
-                
-                if (!docSnap.exists()) {
-                    let nickname = prompt('✨ Escolha um NICKNAME público (ex: LeãoDeJudá, Serva, Vigia):', 'Jornaleiro');
-                    while (!nickname || nickname.trim() === '') {
-                        nickname = prompt('Nickname não pode ficar vazio:');
+                const result = await getRedirectResult(auth);
+                if (result) {
+                    const user = result.user;
+                    const userDocRef = doc(db, 'usuarios', user.uid);
+                    const docSnap = await getDoc(userDocRef);
+                    
+                    if (!docSnap.exists()) {
+                        let nickname = prompt('✨ Escolha um NICKNAME público (ex: LeãoDeJudá, Serva, Vigia):', 'Jornaleiro');
+                        while (!nickname || nickname.trim() === '') {
+                            nickname = prompt('Nickname não pode ficar vazio:');
+                        }
+                        await setDoc(userDocRef, { email: user.email, nickname: nickname, createdAt: new Date().toISOString() });
+                        alert(`✅ Bem-vindo, ${nickname}!`);
+                    } else {
+                        alert(`✅ Bem-vindo de volta, ${docSnap.data().nickname}!`);
                     }
-                    await setDoc(userDocRef, { email: user.email, nickname: nickname, createdAt: new Date().toISOString() });
-                    alert(`✅ Bem-vindo, ${nickname}!`);
-                } else {
-                    alert(`✅ Bem-vindo de volta, ${docSnap.data().nickname}!`);
                 }
             } catch (error) {
-                alert('Erro: ' + error.message);
+                console.error('Erro ao verificar redirect:', error);
+                alert('Erro no login: ' + error.message);
+            }
+        }
+
+        // Chamar verificação imediatamente
+        verificarRedirectLogin();
+
+        // ========== LOGIN COM REDIRECT ==========
+        window.loginComGoogle = async () => {
+            try {
+                await signInWithRedirect(auth, provider);
+            } catch (error) {
+                alert('Erro ao redirecionar: ' + error.message);
             }
         };
 
         window.logout = async () => { await signOut(auth); };
 
-        window.marcarDia = async (dataStr, buttonElement) => {
-            if (!usuarioAtual) return;
-            
-            const diaRef = doc(db, 'dias', dataStr);
-            const userMarcouRef = doc(db, 'marcacoes_usuarios', `${usuarioAtual.uid}_${dataStr}`);
-            const userMarcouSnap = await getDoc(userMarcouRef);
-            
-            if (userMarcouSnap.exists()) {
-                await runTransaction(db, async (transaction) => {
-                    const diaDoc = await transaction.get(diaRef);
-                    const novoTotal = (diaDoc.data()?.total || 1) - 1;
-                    if (novoTotal <= 0) { transaction.delete(diaRef); }
-                    else { transaction.set(diaRef, { total: novoTotal, data: dataStr }, { merge: true }); }
-                    transaction.delete(userMarcouRef);
-                });
-                buttonElement.classList.remove('marked');
-                buttonElement.style.background = '#fef9f0';
-                buttonElement.style.color = '#1e2a2e';
-            } else {
-                await runTransaction(db, async (transaction) => {
-                    const diaDoc = await transaction.get(diaRef);
-                    const novoTotal = (diaDoc.data()?.total || 0) + 1;
-                    transaction.set(diaRef, { total: novoTotal, data: dataStr }, { merge: true });
-                    transaction.set(userMarcouRef, { uid: usuarioAtual.uid, data: dataStr });
-                });
-                buttonElement.classList.add('marked');
-                buttonElement.style.background = '#b45309';
-                buttonElement.style.color = 'white';
-            }
-            await carregarTodasEstatisticas();
-            await atualizarContadoresCalendario();
-        };
+        // ... (resto do seu código: marcarDia, carregarTodasEstatisticas, etc.)
 
         async function carregarTodasEstatisticas() {
             const usuariosSnapshot = await getDocs(collection(db, 'usuarios'));
