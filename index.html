@@ -55,7 +55,7 @@
                 }
             } catch (error) {
                 if (error.code === 'auth/popup-blocked') {
-                    alert('⚠️ Permita pop-ups para este site no navegador.');
+                    alert('⚠️ Permitir pop-ups para este site no navegador.');
                 } else {
                     alert('Erro: ' + error.message);
                 }
@@ -66,6 +66,8 @@
 
         // ========== FUNÇÃO MARCAR DIA (GLOBAL) ==========
         window.marcarDia = async (dataStr, buttonElement) => {
+            console.log("🔵 marcarDia chamado para:", dataStr, buttonElement);
+            
             if (!usuarioAtual) {
                 alert('🔒 Faça login para marcar dias no calendário.');
                 return;
@@ -86,6 +88,7 @@
                 buttonElement.classList.remove('marked');
                 buttonElement.style.background = '#fef9f0';
                 buttonElement.style.color = '#1e2a2e';
+                alert('❌ Marcação removida.');
             } else {
                 await runTransaction(db, async (transaction) => {
                     const diaDoc = await transaction.get(diaRef);
@@ -96,6 +99,7 @@
                 buttonElement.classList.add('marked');
                 buttonElement.style.background = '#b45309';
                 buttonElement.style.color = 'white';
+                alert('✅ Dia marcado! Obrigado por jejuar e orar.');
             }
             await carregarContagemPublica();
         };
@@ -236,7 +240,7 @@
                         dayDiv.appendChild(contadorSpan);
                     }
                     
-                    // CRIA A FUNÇÃO DE CLIQUE CORRETAMENTE
+                    // CORREÇÃO: Usar onclick diretamente com a função global
                     dayDiv.onclick = (function(ds, el) {
                         return function() { window.marcarDia(ds, el); };
                     })(dataStr, dayDiv);
@@ -259,12 +263,12 @@
 
         // ========== SALMO DO DIA ==========
         const salmosSemana = {
-            0: { referencia: "Salmo 24", titulo: "Do Eterno é a terra", texto: "1. Do Eterno é a terra e tudo o que nela existe...", audioId: "1zuO9EqKnikIl18v8-PZ1CbBnrY1DR2Lb" },
-            1: { referencia: "Salmo 48", titulo: "Grande é o Eterno", texto: "1. Grande é o Eterno e mui digno de louvor...", audioId: "1SnFLrHBX6WcGnXZGbiSgH674GSkVOXrV" },
-            2: { referencia: "Salmo 82", titulo: "Deus preside na assembleia divina", texto: "1. Deus preside na assembleia divina...", audioId: "1RGUDwv7lE77R-sUFnpuNxru2sIpT92nR" },
+            0: { referencia: "Salmo 24", titulo: "Do Eterno é a terra", texto: "1. Do Eterno é a terra...", audioId: "1zuO9EqKnikIl18v8-PZ1CbBnrY1DR2Lb" },
+            1: { referencia: "Salmo 48", titulo: "Grande é o Eterno", texto: "1. Grande é o Eterno...", audioId: "1SnFLrHBX6WcGnXZGbiSgH674GSkVOXrV" },
+            2: { referencia: "Salmo 82", titulo: "Deus preside na assembleia divina", texto: "1. Deus preside na assembleia...", audioId: "1RGUDwv7lE77R-sUFnpuNxru2sIpT92nR" },
             3: { referencia: "Salmos 94:1-95:3", titulo: "O Eterno é Deus das vinganças", texto: "94:1. O Eterno é Deus das vinganças...", audioId: "1G1ghCdXlq0IB4AH-d2ypug0vVram8ozg" },
             4: { referencia: "Salmo 81", titulo: "Cantai alegremente a Deus", texto: "1. Cantai alegremente a Deus...", audioId: "1DYQCe4XCVPRCjY2p2epgXF9GQCMZ9KDu" },
-            5: { referencia: "Salmo 93", titulo: "O Eterno reina!", texto: "1. O Eterno reina! Está vestido de majestade...", audioId: "1aE5Ri7KXKiISDtDNO0XfRKEeKDyvugIe" },
+            5: { referencia: "Salmo 93", titulo: "O Eterno reina!", texto: "1. O Eterno reina!...", audioId: "1aE5Ri7KXKiISDtDNO0XfRKEeKDyvugIe" },
             6: { referencia: "Salmo 92", titulo: "Bom é louvar ao Eterno", texto: "1. Bom é louvar ao Eterno...", audioId: "1iKdIqmCkzkZE5nQi04HApSGVUMk2boF1" }
         };
 
@@ -275,9 +279,9 @@
             const container = document.getElementById('conteudoSalmo');
             if (!container || !salmo) return;
             const nomeDia = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Shabat'][diaSemana];
-            let html = `<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 16px;"><div style="font-size: 1.2rem; font-weight: bold; color: #b45309;">✨ ${salmo.referencia}</div><div style="font-size: 0.7rem; color: #6c6f6b;">${nomeDia}</div></div><div style="font-style: italic; font-size: 0.9rem; line-height: 1.6; margin-bottom: 16px;">"${salmo.titulo}"</div><div style="font-size: 0.85rem; line-height: 1.5; white-space: pre-line; background: #fff7ed; padding: 16px; border-radius: 16px;">${salmo.texto}</div>`;
+            let html = `<div style="display: flex; justify-content: space-between; margin-bottom: 16px;"><div style="font-size: 1.2rem; font-weight: bold; color: #b45309;">✨ ${salmo.referencia}</div><div style="font-size: 0.7rem; color: #6c6f6b;">${nomeDia}</div></div><div style="font-style: italic; margin-bottom: 16px;">"${salmo.titulo}"</div><div style="background: #fff7ed; padding: 16px; border-radius: 16px;">${salmo.texto}</div>`;
             if (salmo.audioId) {
-                html += `<div style="margin-top: 16px; padding: 12px; background: #e7e5e4; border-radius: 20px;"><audio controls style="width: 100%;"><source src="https://drive.google.com/uc?export=download&id=${salmo.audioId}" type="audio/mpeg"></audio><div style="font-size: 0.6rem; color: #6c6f6b; margin-top: 8px; text-align: center;">🎶 Salmo musicado</div></div>`;
+                html += `<div style="margin-top: 16px; padding: 12px; background: #e7e5e4; border-radius: 20px;"><audio controls style="width: 100%;"><source src="https://drive.google.com/uc?export=download&id=${salmo.audioId}" type="audio/mpeg"></audio></div>`;
             }
             container.innerHTML = html;
         }
@@ -299,7 +303,7 @@
             }
             if (!leitura) leitura = Object.values(leiturasFFOZ)[0];
             if (leitura) {
-                container.innerHTML = `<div style="background: #2c3e2f; color: #fef3c7; padding: 6px 16px; border-radius: 40px; display: inline-block; margin-bottom: 16px;">📜 Parashá ${leitura.parasha}</div><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 12px;"><div style="background: #fff7ed; border-radius: 16px; padding: 12px; text-align: center;"><strong>📜 TORAH</strong><br>${leitura.torah}</div><div style="background: #fff7ed; border-radius: 16px; padding: 12px; text-align: center;"><strong>📖 PROFETAS</strong><br>${leitura.haftarah}</div><div style="background: #fff7ed; border-radius: 16px; padding: 12px; text-align: center;"><strong>✝️ EVANGELHO</strong><br>${leitura.gospel}</div></div><div style="text-align: center; margin-top: 16px;"><a href="https://ffoz.org/torahportions/" target="_blank" style="color: #b45309;">📖 Ver estudo completo na FFOZ →</a></div>`;
+                container.innerHTML = `<div style="background: #2c3e2f; color: #fef3c7; padding: 6px 16px; border-radius: 40px; display: inline-block; margin-bottom: 16px;">📜 Parashá ${leitura.parasha}</div><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 12px;"><div style="background: #fff7ed; border-radius: 16px; padding: 12px;"><strong>📜 TORAH</strong><br>${leitura.torah}</div><div style="background: #fff7ed; border-radius: 16px; padding: 12px;"><strong>📖 PROFETAS</strong><br>${leitura.haftarah}</div><div style="background: #fff7ed; border-radius: 16px; padding: 12px;"><strong>✝️ EVANGELHO</strong><br>${leitura.gospel}</div></div><div style="text-align: center; margin-top: 16px;"><a href="https://ffoz.org/torahportions/" target="_blank" style="color: #b45309;">📖 Ver estudo completo na FFOZ →</a></div>`;
             }
         }
 
@@ -376,13 +380,13 @@
                     const respostasSnap = await getDocs(respostasQuery);
                     const postDiv = document.createElement('div');
                     postDiv.style.cssText = 'background: #fff7ed; border-radius: 20px; padding: 16px; margin-bottom: 20px; border: 1px solid #f0e7db;';
-                    postDiv.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 8px;"><div style="font-weight: bold; color: #b45309;">${escapeHtml(post.autor_nick)}</div><div style="font-size: 0.6rem; color: #6c6f6b;">${new Date(post.createdAt).toLocaleString()}</div></div><div style="font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px; white-space: pre-wrap;">${escapeHtml(post.texto)}</div><div style="display: flex; gap: 16px; align-items: center; border-top: 1px solid #f0e7db; padding-top: 10px;"><button class="like-btn" data-colecao="posts" data-id="${postId}" style="background: none; border: none; cursor: pointer; color: ${post.likes?.includes(usuarioAtual?.uid) ? '#b45309' : '#6c6f6b'}; font-size: 0.75rem;">❤️ ${post.likes?.length || 0}</button><button class="responder-btn" data-id="${postId}" style="background: none; border: none; cursor: pointer; color: #b45309; font-size: 0.75rem;">💬 Responder</button><span style="font-size: 0.65rem; color: #6c6f6b;">💬 ${respostasSnap.size} respostas</span></div><div id="respostas-${postId}" style="margin-top: 12px; padding-left: 16px; border-left: 2px solid #f0e7db;"></div><div id="resposta-form-${postId}" style="display: none; margin-top: 12px;"><textarea id="resposta-texto-${postId}" rows="2" maxlength="500" placeholder="Escreva sua resposta (máx. 500 caracteres)..." style="width: 100%; padding: 8px; border-radius: 16px; border: 1px solid #e7e5e4;"></textarea><div style="display: flex; justify-content: flex-end; margin-top: 6px;"><button class="enviar-resposta-btn" data-id="${postId}" class="btn-small" style="padding: 4px 12px;">Enviar</button></div></div>`;
+                    postDiv.innerHTML = `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><div style="font-weight: bold; color: #b45309;">${escapeHtml(post.autor_nick)}</div><div style="font-size: 0.6rem; color: #6c6f6b;">${new Date(post.createdAt).toLocaleString()}</div></div><div style="margin-bottom: 12px;">${escapeHtml(post.texto)}</div><div style="display: flex; gap: 16px; border-top: 1px solid #f0e7db; padding-top: 10px;"><button class="like-btn" data-colecao="posts" data-id="${postId}" style="background: none; border: none; cursor: pointer; color: ${post.likes?.includes(usuarioAtual?.uid) ? '#b45309' : '#6c6f6b'};">❤️ ${post.likes?.length || 0}</button><button class="responder-btn" data-id="${postId}" style="background: none; border: none; cursor: pointer; color: #b45309;">💬 Responder</button><span>💬 ${respostasSnap.size}</span></div><div id="respostas-${postId}" style="margin-top: 12px; padding-left: 16px; border-left: 2px solid #f0e7db;"></div><div id="resposta-form-${postId}" style="display: none; margin-top: 12px;"><textarea id="resposta-texto-${postId}" rows="2" maxlength="500" placeholder="Sua resposta..."></textarea><div><button class="enviar-resposta-btn" data-id="${postId}" class="btn-small">Enviar</button></div></div>`;
                     const respostasDiv = postDiv.querySelector(`#respostas-${postId}`);
                     respostasSnap.forEach(r => {
                         const resposta = r.data();
                         const respDiv = document.createElement('div');
                         respDiv.style.cssText = 'margin-top: 12px; background: white; border-radius: 12px; padding: 10px;';
-                        respDiv.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;"><span style="font-weight: bold; font-size: 0.75rem; color: #b45309;">${escapeHtml(resposta.autor_nick)}</span><span style="font-size: 0.55rem; color: #6c6f6b;">${new Date(resposta.createdAt).toLocaleString()}</span></div><div style="font-size: 0.8rem; margin: 6px 0;">${escapeHtml(resposta.texto)}</div><button class="like-resposta-btn" data-id="${r.id}" style="background: none; border: none; cursor: pointer; color: ${resposta.likes?.includes(usuarioAtual?.uid) ? '#b45309' : '#6c6f6b'}; font-size: 0.65rem;">❤️ ${resposta.likes?.length || 0}</button>`;
+                        respDiv.innerHTML = `<div style="display: flex; justify-content: space-between;"><span style="font-weight: bold; color: #b45309;">${escapeHtml(resposta.autor_nick)}</span><span style="font-size: 0.55rem;">${new Date(resposta.createdAt).toLocaleString()}</span></div><div>${escapeHtml(resposta.texto)}</div><button class="like-resposta-btn" data-id="${r.id}" style="background: none; border: none; cursor: pointer;">❤️ ${resposta.likes?.length || 0}</button>`;
                         respostasDiv.appendChild(respDiv);
                     });
                     container.appendChild(postDiv);
@@ -458,6 +462,7 @@
         .day-cell { background: #fef9f0; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db; transition: all 0.1s; }
         .day-cell.marked { background: #b45309; color: white; }
         .day-cell:hover { opacity: 0.8; transform: scale(0.98); }
+        .auth-status { font-size: 0.7rem; text-align: right; margin-bottom: 16px; }
     </style>
 </head>
 <body>
@@ -473,11 +478,10 @@
             <button class="btn-small" onclick="logout()" style="margin-left: 10px;">Sair</button>
         </div>
     </div>
-    <div id="authStatus" class="auth-status" style="font-size: 0.7rem; text-align: right; margin-bottom: 16px;"></div>
+    <div id="authStatus" class="auth-status"></div>
 
     <p class="versiculo">"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</p>
 
-    <!-- PAINEL DE CONTAGEM -->
     <div class="card-section">
         <h2>📊 Propósito em Números</h2>
         <div class="aviso">🔥 Dados atualizados em tempo real - cada clique no calendário conta!</div>
@@ -497,28 +501,24 @@
         <div style="text-align: center;"><span class="aviso">📅 Início: 16/05/2026 | 📆 Término: ~03/06/2027</span></div>
     </div>
 
-    <!-- SALMO DO DIA -->
     <div class="card-section">
         <h2>📖 Salmo do Dia - Shir Shel Yom</h2>
         <div class="aviso">🎵 Cada dia da semana tem um Salmo específico - tradição do Templo de Jerusalém</div>
         <div id="conteudoSalmo" style="background: #fef9f0; border-radius: 20px; padding: 20px;"><div style="text-align: center;">Carregando salmo...</div></div>
     </div>
 
-    <!-- ESTUDO FFOZ -->
     <div class="card-section">
         <h2>📖 Estudo da Semana - Torah Portions (FFOZ)</h2>
         <div class="aviso">🕯️ Leitura coordenada da Torá, Profetas (Haftarah) e Evangelho</div>
         <div id="conteudoEstudo" style="background: #fef9f0; border-radius: 20px; padding: 20px;"><div style="text-align: center;">Carregando estudo...</div></div>
     </div>
 
-    <!-- CALENDÁRIO -->
     <div class="card-section">
         <h2>📅 Calendário Coletivo</h2>
         <div class="aviso">🔥 Clique nos dias que você jejuou e orou. 🔥 mostra quantos marcaram. <strong>Faça login para marcar.</strong></div>
         <div id="calendar"></div>
     </div>
 
-    <!-- MURO DE ORAÇÕES -->
     <div class="card-section">
         <h2>✍️ Muro de Orações</h2>
         <div class="aviso">🙏 Compartilhe necessidades, dores, pedidos. Responda com empatia. Limite 500 caracteres.</div>
