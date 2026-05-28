@@ -7,9 +7,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, arrayUnion, arrayRemove, query, orderBy, addDoc, onSnapshot, where, increment, runTransaction } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, runTransaction, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
-        // Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyADaKwc0YIOKWeP01mgmjkhufqbdeqK3ok",
             authDomain: "calendario-jornaleiro.firebaseapp.com",
@@ -24,18 +23,40 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
+        // Constantes
+        const DATA_INICIO = new Date(2026, 4, 16, 22, 0, 0); // 16/05/2026 22h
+        const DIAS_TOTAIS = 384;
+        
         let usuarioAtual = null;
         let usuarioNickname = null;
 
-        // Elementos
+        // Elementos DOM
         const splashScreen = document.getElementById('splashScreen');
         const appScreen = document.getElementById('appScreen');
         const userNicknameSpan = document.getElementById('userNickname');
         const userEmailSpan = document.getElementById('userEmail');
         const calendarDiv = document.getElementById('calendar');
-        const contadorHojeSpan = document.getElementById('contadorHoje');
+        
+        // Elementos de estatísticas
         const totalParticipantesSpan = document.getElementById('totalParticipantes');
-        const barraFill = document.getElementById('barraFill');
+        const totalMarcacoesSpan = document.getElementById('totalMarcacoes');
+        const mediaPorPessoaSpan = document.getElementById('mediaPorPessoa');
+        const diasDecorridosSpan = document.getElementById('diasDecorridos');
+        const diasRestantesSpan = document.getElementById('diasRestantes');
+        const progressoJornadaFill = document.getElementById('progressoJornadaFill');
+        const percentualJornadaSpan = document.getElementById('percentualJornada');
+        const hojeMarcaramSpan = document.getElementById('hojeMarcaram');
+        const topDiasDiv = document.getElementById('topDias');
+
+        // ========== FUNÇÕES DE CÁLCULO ==========
+        function calcularDiasJornada() {
+            const hoje = new Date();
+            const diffTime = hoje - DATA_INICIO;
+            const diasDecorridos = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+            const diasRestantes = Math.max(0, DIAS_TOTAIS - diasDecorridos);
+            const percentual = Math.min(100, (diasDecorridos / DIAS_TOTAIS) * 100);
+            return { diasDecorridos, diasRestantes, percentual };
+        }
 
         // ========== LOGIN ==========
         window.loginComGoogle = async () => {
@@ -46,9 +67,7 @@
                 const docSnap = await getDoc(userDocRef);
                 
                 if (!docSnap.exists()) {
-                    let nickname = prompt(
-                        '✨ Bem-vindo!\n\nEscolha um NICKNAME público:\nEx: LeãoDeJudá, Serva, Vigia'
-                    );
+                    let nickname = prompt('✨ Escolha um NICKNAME público (ex: LeãoDeJudá, Serva, Vigia):', 'Jornaleiro');
                     while (!nickname || nickname.trim() === '') {
                         nickname = prompt('Nickname não pode ficar vazio:');
                     }
@@ -66,33 +85,31 @@
             }
         };
 
-        window.logout = async () => {
-            await signOut(auth);
-        };
+        window.logout = async () => { await signOut(auth); };
 
-        // ========== MARCAR DIA (público) ==========
+        // ========== MARCAR DIA ==========
         window.marcarDia = async (dataStr, buttonElement) => {
             if (!usuarioAtual) return;
             
             const diaRef = doc(db, 'dias', dataStr);
             const userMarcouRef = doc(db, 'marcacoes_usuarios', `${usuarioAtual.uid}_${dataStr}`);
-            
             const userMarcouSnap = await getDoc(userMarcouRef);
             
             if (userMarcouSnap.exists()) {
-                // Desmarcar
                 await runTransaction(db, async (transaction) => {
                     const diaDoc = await transaction.get(diaRef);
                     const novoTotal = (diaDoc.data()?.total || 1) - 1;
-                    transaction.update(diaRef, { total: novoTotal });
+                    if (novoTotal <= 0) {
+                        transaction.delete(diaRef);
+                    } else {
+                        transaction.set(diaRef, { total: novoTotal, data: dataStr }, { merge: true });
+                    }
                     transaction.delete(userMarcouRef);
                 });
                 buttonElement.classList.remove('marked');
                 buttonElement.style.background = '#fef9f0';
                 buttonElement.style.color = '#1e2a2e';
-                alert('❌ Marcação removida.');
             } else {
-                // Marcar
                 await runTransaction(db, async (transaction) => {
                     const diaDoc = await transaction.get(diaRef);
                     const novoTotal = (diaDoc.data()?.total || 0) + 1;
@@ -102,50 +119,84 @@
                 buttonElement.classList.add('marked');
                 buttonElement.style.background = '#b45309';
                 buttonElement.style.color = 'white';
-                alert('✅ Dia marcado! Obrigado por jejuar e orar.');
             }
-            
-            // Atualizar contadores
-            await carregarContadorHoje();
-            await carregarContadoresCalendario();
+            await carregarTodasEstatisticas();
+            await atualizarContadoresCalendario();
         };
 
-        // ========== CARREGAR CONTADOR DE HOJE ==========
-        async function carregarContadorHoje() {
-            const hoje = new Date().toISOString().split('T')[0];
-            const diaRef = doc(db, 'dias', hoje);
-            const docSnap = await getDoc(diaRef);
-            const total = docSnap.data()?.total || 0;
-            contadorHojeSpan.textContent = total;
-            
-            // Barra de progresso (baseada em meta de 50 pessoas - ajustável)
-            const meta = 50;
-            const percent = Math.min(100, (total / meta) * 100);
-            barraFill.style.width = percent + '%';
-        }
-
-        // ========== CARREGAR TOTAL DE PARTICIPANTES ==========
-        async function carregarTotalParticipantes() {
+        // ========== CARREGAR ESTATÍSTICAS COMPLETAS ==========
+        async function carregarTodasEstatisticas() {
+            // Total de participantes
             const usuariosSnapshot = await getDocs(collection(db, 'usuarios'));
-            totalParticipantesSpan.textContent = usuariosSnapshot.size;
+            const totalUsuarios = usuariosSnapshot.size;
+            totalParticipantesSpan.textContent = totalUsuarios;
+            
+            // Total de marcações (soma de todos os dias)
+            const diasSnapshot = await getDocs(collection(db, 'dias'));
+            let totalMarcacoes = 0;
+            diasSnapshot.forEach(doc => {
+                totalMarcacoes += doc.data().total || 0;
+            });
+            totalMarcacoesSpan.textContent = totalMarcacoes;
+            
+            // Média por pessoa
+            const media = totalUsuarios > 0 ? (totalMarcacoes / totalUsuarios).toFixed(1) : 0;
+            mediaPorPessoaSpan.textContent = media;
+            
+            // Dias da jornada
+            const { diasDecorridos, diasRestantes, percentual } = calcularDiasJornada();
+            diasDecorridosSpan.textContent = diasDecorridos;
+            diasRestantesSpan.textContent = diasRestantes;
+            progressoJornadaFill.style.width = percentual + '%';
+            percentualJornadaSpan.textContent = Math.floor(percentual);
+            
+            // Quantos marcaram hoje
+            const hoje = new Date().toISOString().split('T')[0];
+            const hojeDoc = await getDoc(doc(db, 'dias', hoje));
+            const marcaramHoje = hojeDoc.data()?.total || 0;
+            hojeMarcaramSpan.textContent = marcaramHoje;
+            
+            // Top 5 dias mais marcados
+            const q = query(collection(db, 'dias'), orderBy('total', 'desc'), limit(5));
+            const topSnapshot = await getDocs(q);
+            topDiasDiv.innerHTML = '';
+            if (topSnapshot.empty) {
+                topDiasDiv.innerHTML = '<div style="color: #6c6f6b;">Nenhum dia marcado ainda.</div>';
+            } else {
+                topSnapshot.forEach(doc => {
+                    const data = doc.id;
+                    const total = doc.data().total;
+                    const div = document.createElement('div');
+                    div.style.cssText = 'display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0e7db;';
+                    div.innerHTML = `<span>📅 ${formatarDataBr(data)}</span><span style="font-weight: bold; color: #b45309;">🔥 ${total} ${total === 1 ? 'pessoa' : 'pessoas'}</span>`;
+                    topDiasDiv.appendChild(div);
+                });
+            }
         }
 
-        // ========== CALENDÁRIO COM CONTADORES ==========
-        async function carregarContadoresCalendario() {
+        function formatarDataBr(dataStr) {
+            const partes = dataStr.split('-');
+            if (partes.length !== 3) return dataStr;
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
+        // ========== ATUALIZAR CALENDÁRIO ==========
+        async function atualizarContadoresCalendario() {
             const diasSnapshot = await getDocs(collection(db, 'dias'));
             const contadores = {};
-            diasSnapshot.forEach(doc => {
-                contadores[doc.id] = doc.data().total;
-            });
+            diasSnapshot.forEach(doc => { contadores[doc.id] = doc.data().total; });
             
-            // Atualizar cada dia no calendário
             document.querySelectorAll('.day-cell').forEach(cell => {
                 const dataStr = cell.getAttribute('data-date');
                 const total = contadores[dataStr] || 0;
-                const contadorSpan = cell.querySelector('.contador-dia');
-                if (contadorSpan) {
-                    contadorSpan.textContent = total > 0 ? `🔥 ${total}` : '';
+                let contadorSpan = cell.querySelector('.contador-dia');
+                if (!contadorSpan) {
+                    contadorSpan = document.createElement('div');
+                    contadorSpan.className = 'contador-dia';
+                    contadorSpan.style.cssText = 'font-size: 0.6rem; margin-top: 4px;';
+                    cell.appendChild(contadorSpan);
                 }
+                contadorSpan.textContent = total > 0 ? `🔥 ${total}` : '';
             });
         }
 
@@ -168,7 +219,6 @@
                 { nome: "JUNHO 2027", dias: 10, inicio: 2, ano: 2027, mesNum: 5 }
             ];
             
-            // Buscar marcações do usuário atual para saber quais dias ele já marcou
             let marcacoesUsuario = new Set();
             if (usuarioAtual) {
                 const q = query(collection(db, 'marcacoes_usuarios'), where('uid', '==', usuarioAtual.uid));
@@ -176,7 +226,6 @@
                 snapshot.forEach(doc => marcacoesUsuario.add(doc.id.split('_')[1]));
             }
             
-            // Buscar contadores globais
             const diasSnapshot = await getDocs(collection(db, 'dias'));
             const contadores = {};
             diasSnapshot.forEach(doc => { contadores[doc.id] = doc.data().total; });
@@ -193,10 +242,7 @@
                 const header = document.createElement('div');
                 header.style.cssText = 'background: #2c3e2f; color: #fef3c7; padding: 12px 16px; font-weight: bold; cursor: pointer;';
                 header.innerHTML = `📅 ${mes.nome} <span style="float:right;">▼</span>`;
-                header.onclick = () => {
-                    const body = monthDiv.querySelector('.month-body');
-                    body.style.display = body.style.display === 'grid' ? 'none' : 'grid';
-                };
+                header.onclick = () => { const body = monthDiv.querySelector('.month-body'); body.style.display = body.style.display === 'grid' ? 'none' : 'grid'; };
                 monthDiv.appendChild(header);
                 
                 const body = document.createElement('div');
@@ -204,17 +250,9 @@
                 body.style.cssText = 'display: none; padding: 16px; grid-template-columns: repeat(7, 1fr); gap: 6px;';
                 
                 const diasSemana = ['D','S','T','Q','Q','S','S'];
-                diasSemana.forEach(dia => {
-                    const diaDiv = document.createElement('div');
-                    diaDiv.textContent = dia;
-                    diaDiv.style.cssText = 'font-weight: bold; color: #b45309; text-align: center;';
-                    body.appendChild(diaDiv);
-                });
+                diasSemana.forEach(dia => { const diaDiv = document.createElement('div'); diaDiv.textContent = dia; diaDiv.style.cssText = 'font-weight: bold; color: #b45309; text-align: center;'; body.appendChild(diaDiv); });
                 
-                for (let i = 0; i < mes.inicio; i++) {
-                    const empty = document.createElement('div');
-                    body.appendChild(empty);
-                }
+                for (let i = 0; i < mes.inicio; i++) { const empty = document.createElement('div'); body.appendChild(empty); }
                 
                 for (let d = 1; d <= mes.dias; d++) {
                     const dataStr = `${mes.ano}-${String(mes.mesNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -224,7 +262,7 @@
                     const dayDiv = document.createElement('div');
                     dayDiv.className = 'day-cell';
                     dayDiv.setAttribute('data-date', dataStr);
-                    dayDiv.style.cssText = 'background: #fef9f0; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db; position: relative;' + (usuarioMarcou ? ' background: #b45309; color: white;' : '');
+                    dayDiv.style.cssText = 'background: #fef9f0; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db;' + (usuarioMarcou ? ' background: #b45309; color: white;' : '');
                     
                     const dayNumber = document.createElement('div');
                     dayNumber.style.fontWeight = 'bold';
@@ -240,49 +278,36 @@
                         dayDiv.appendChild(contadorSpan);
                     }
                     
-                    dayDiv.onclick = (function(ds, el) {
-                        return () => marcarDia(ds, el);
-                    })(dataStr, dayDiv);
+                    dayDiv.onclick = (function(ds, el) { return () => marcarDia(ds, el); })(dataStr, dayDiv);
                     body.appendChild(dayDiv);
                 }
-                
                 monthDiv.appendChild(body);
                 calendarDiv.appendChild(monthDiv);
             }
             
-            // Abrir mês atual
             const hoje = new Date();
             const mesAtual = hoje.getMonth();
             const anoAtual = hoje.getFullYear();
             const monthBodies = document.querySelectorAll('.month-body');
             for (let i = 0; i < meses.length; i++) {
-                if (meses[i].ano === anoAtual && meses[i].mesNum === mesAtual) {
-                    if (monthBodies[i]) monthBodies[i].style.display = 'grid';
-                    break;
-                }
+                if (meses[i].ano === anoAtual && meses[i].mesNum === mesAtual && monthBodies[i]) { monthBodies[i].style.display = 'grid'; break; }
             }
-            if (monthBodies[0] && !document.querySelector('.month-body[style*="grid"]')) {
-                monthBodies[0].style.display = 'grid';
-            }
+            if (monthBodies[0] && !document.querySelector('.month-body[style*="grid"]')) { monthBodies[0].style.display = 'grid'; }
         }
 
-        // ========== OBSERVADOR DE AUTENTICAÇÃO ==========
+        // ========== OBSERVADOR ==========
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 usuarioAtual = user;
                 const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
                 const userData = userDoc.data();
                 usuarioNickname = userData?.nickname || user.email.split('@')[0];
-                
                 splashScreen.style.display = 'none';
                 appScreen.style.display = 'block';
-                
                 userNicknameSpan.textContent = usuarioNickname;
                 userEmailSpan.textContent = user.email;
-                
                 await gerarCalendario();
-                await carregarContadorHoje();
-                await carregarTotalParticipantes();
+                await carregarTodasEstatisticas();
             } else {
                 usuarioAtual = null;
                 splashScreen.style.display = 'flex';
@@ -290,106 +315,43 @@
             }
         });
     </script>
-    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #f5f3ef;
-            color: #1e2a2e;
-            padding: 20px;
-            line-height: 1.5;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f5f3ef; color: #1e2a2e; padding: 20px; line-height: 1.5; }
         .container { max-width: 1200px; margin: 0 auto; }
         
-        .splash {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 80vh;
-            text-align: center;
-        }
+        .splash { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 80vh; text-align: center; }
         .splash h1 { font-size: 2rem; color: #b45309; margin-bottom: 16px; }
         
-        .card-section {
-            background: white;
-            border-radius: 28px;
-            padding: 24px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            border: 1px solid #e7e5e4;
-        }
+        .card-section { background: white; border-radius: 28px; padding: 24px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e7e5e4; }
         .card-section h2 { color: #b45309; margin-bottom: 16px; font-size: 1.3rem; border-left: 4px solid #b45309; padding-left: 12px; }
         .aviso { font-size: 0.7rem; color: #6c6f6b; margin-bottom: 16px; padding: 8px; background: #fef9f0; border-radius: 16px; }
         
-        .btn {
-            padding: 12px 32px;
-            border: none;
-            border-radius: 40px;
-            font-size: 1rem;
-            cursor: pointer;
-            background: #b45309;
-            color: white;
-            transition: 0.2s;
-            font-weight: bold;
-        }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: #fff7ed; border-radius: 20px; padding: 16px; text-align: center; }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #b45309; }
+        .stat-label { font-size: 0.7rem; color: #6c6f6b; margin-top: 4px; }
+        
+        .progress-bar-bg { background: #e7e5e4; border-radius: 20px; height: 16px; overflow: hidden; margin: 12px 0; }
+        .progress-fill { background: #b45309; width: 0%; height: 100%; transition: width 0.3s; }
+        
+        .btn { padding: 12px 32px; border: none; border-radius: 40px; font-size: 1rem; cursor: pointer; background: #b45309; color: white; font-weight: bold; }
         .btn:hover { background: #9a3e06; }
         .btn-small { padding: 6px 12px; font-size: 0.8rem; background: #b45309; color: white; border: none; border-radius: 40px; cursor: pointer; }
-        
         .google-btn { background: #4285f4; }
         .google-btn:hover { background: #357ae8; }
         
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        footer { text-align: center; margin-top: 40px; padding-top: 20px; font-size: 0.7rem; color: #6c6f6b; border-top: 1px solid #e7e5e4; }
         
-        footer {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            font-size: 0.7rem;
-            color: #6c6f6b;
-            border-top: 1px solid #e7e5e4;
-        }
-        
-        .contador-container {
-            text-align: center;
-            margin-bottom: 20px;
-            padding: 20px;
-            background: #fff7ed;
-            border-radius: 28px;
-        }
-        .contador-numero {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #b45309;
-        }
-        .progress-bar {
-            margin-top: 12px;
-            background: #e7e5e4;
-            border-radius: 20px;
-            height: 12px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            background: #b45309;
-            width: 0%;
-            height: 100%;
-            transition: width 0.3s;
-        }
+        .versiculo { font-style: italic; color: #6c6f6b; font-size: 0.85rem; text-align: center; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 <div class="container">
     <div id="splashScreen" class="splash">
         <h1>📆 Calendário do Jornaleiro</h1>
-        <p>"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</p>
+        <p class="versiculo">"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</p>
         <button class="btn google-btn" onclick="loginComGoogle()">🔐 Entrar com Google</button>
         <p style="margin-top: 20px; font-size: 0.75rem;">🔒 Escolha um nickname público. Ninguém saberá seu nome real.</p>
     </div>
@@ -397,40 +359,42 @@
     <div id="appScreen" style="display: none;">
         <div class="top-bar">
             <h1 style="font-size: 1.5rem;">📆 Calendário do Jornaleiro</h1>
-            <div>
-                <span id="userNickname" style="font-weight: bold; color: #b45309;"></span>
-                <span id="userEmail" style="font-size: 0.7rem; color: #6c6f6b; margin-left: 8px;"></span>
-                <button class="btn-small" onclick="logout()" style="margin-left: 10px;">Sair</button>
+            <div><span id="userNickname" style="font-weight: bold; color: #b45309;"></span><span id="userEmail" style="font-size: 0.7rem; color: #6c6f6b; margin-left: 8px;"></span><button class="btn-small" onclick="logout()" style="margin-left: 10px;">Sair</button></div>
+        </div>
+
+        <!-- ESTATÍSTICAS PRINCIPAIS -->
+        <div class="card-section">
+            <h2>📊 Jornada do Jornaleiro</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-number" id="totalParticipantes">0</div><div class="stat-label">Participantes</div></div>
+                <div class="stat-card"><div class="stat-number" id="totalMarcacoes">0</div><div class="stat-label">Total de Marcações</div></div>
+                <div class="stat-card"><div class="stat-number" id="mediaPorPessoa">0</div><div class="stat-label">Média por Pessoa</div></div>
+                <div class="stat-card"><div class="stat-number" id="hojeMarcaram">0</div><div class="stat-label">Marcaram Hoje</div></div>
+            </div>
+            
+            <div style="margin: 16px 0;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>📅 Dias decorridos: <strong id="diasDecorridos">0</strong> / <strong id="diasRestantes">384</strong></span>
+                    <span><strong id="percentualJornada">0</strong>% completo</span>
+                </div>
+                <div class="progress-bar-bg"><div class="progress-fill" id="progressoJornadaFill"></div></div>
             </div>
         </div>
 
-        <!-- CONTADOR PÚBLICO -->
+        <!-- TOP DIAS -->
         <div class="card-section">
-            <h2>🙏 Propósito de Jejum e Oração</h2>
-            <div class="contador-container">
-                <div style="font-size: 0.8rem; color: #6c6f6b;">Pessoas que jejuaram e oraram HOJE</div>
-                <div class="contador-numero" id="contadorHoje">0</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="barraFill"></div>
-                </div>
-                <div style="font-size: 0.7rem; margin-top: 8px;" id="totalParticipantes"></div>
-            </div>
-            <div class="aviso">
-                🔥 Clique em qualquer dia do calendário para marcar que você jejuou e orou naquele dia.<br>
-                O número 🔥 mostra quantas pessoas já marcaram aquele dia.
-            </div>
+            <h2>🔥 Dias mais movimentados</h2>
+            <div id="topDias"></div>
         </div>
 
         <!-- CALENDÁRIO -->
         <div class="card-section">
             <h2>📅 Calendário Coletivo</h2>
+            <div class="aviso">🔥 Clique em qualquer dia que você jejuou e orou. O número 🔥 mostra quantas pessoas marcaram aquele dia.</div>
             <div id="calendar"></div>
         </div>
     </div>
-
-    <footer>
-        <p>🙏 Propósito de oração e jejum - Clique nos dias que você participou.</p>
-    </footer>
+    <footer><p>🙏 Propósito de oração e jejum - 384 dias - Início: 16/05/2026</p></footer>
 </div>
 </body>
 </html>
