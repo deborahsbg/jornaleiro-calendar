@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Jornaleiro | Salmo do Dia + Estudo + Muro de Orações</title>
+    <title>Calendário do Jornaleiro | Isaías 21</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, orderBy, onSnapshot, addDoc, updateDoc, arrayUnion, arrayRemove, where } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, runTransaction, orderBy, limit, addDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyADaKwc0YIOKWeP01mgmjkhufqbdeqK3ok",
@@ -27,13 +27,18 @@
         let usuarioNickname = null;
 
         // Elementos
-        const splashScreen = document.getElementById('splashScreen');
-        const homeScreen = document.getElementById('homeScreen');
+        const loginArea = document.getElementById('loginArea');
+        const userInfo = document.getElementById('userInfo');
         const userNicknameSpan = document.getElementById('userNickname');
         const userEmailSpan = document.getElementById('userEmail');
-        const authStatus = document.getElementById('authStatus');
         const novoPostForm = document.getElementById('novoPostForm');
+        const authStatus = document.getElementById('authStatus');
 
+        // Constantes do calendário
+        const DATA_INICIO = new Date(2026, 4, 16, 22, 0, 0);
+        const DIAS_TOTAIS = 384;
+
+        // ========== LOGIN ==========
         window.loginComGoogle = async () => {
             try {
                 const result = await signInWithPopup(auth, provider);
@@ -42,7 +47,7 @@
                 const docSnap = await getDoc(userDocRef);
                 
                 if (!docSnap.exists()) {
-                    let nickname = prompt('✨ Escolha um NICKNAME público:', 'Jornaleiro');
+                    let nickname = prompt('✨ Escolha um NICKNAME público (ex: LeãoDeJudá):', 'Jornaleiro');
                     while (!nickname || nickname.trim() === '') {
                         nickname = prompt('Nickname não pode ficar vazio:');
                     }
@@ -51,7 +56,7 @@
                 }
             } catch (error) {
                 if (error.code === 'auth/popup-blocked') {
-                    alert('⚠️ Permitir pop-ups para este site no navegador.');
+                    alert('⚠️ Permita pop-ups para este site no navegador.');
                 } else {
                     alert('Erro: ' + error.message);
                 }
@@ -59,17 +64,16 @@
         };
 
         window.logout = async () => { await signOut(auth); };
-        window.irParaCalendario = () => { window.location.href = 'calendario.html'; };
 
         // ========== SALMO DO DIA ==========
         const salmosSemana = {
-            0: { referencia: "Salmo 24", titulo: "Do Eterno é a terra", texto: "1. Do Eterno é a terra e tudo o que nela existe. 2. Pois ele a fundou sobre os mares e sobre as correntes a estabeleceu. 3. Quem pode subir ao monte do Eterno? Quem pode estar em seu santo lugar? 4. Aquele que tem mãos inocentes e coração puro...", audioId: "1zuO9EqKnikIl18v8-PZ1CbBnrY1DR2Lb" },
-            1: { referencia: "Salmo 48", titulo: "Grande é o Eterno", texto: "1. Grande é o Eterno e mui digno de louvor na cidade do nosso Deus, no seu santo monte. 2. Bela e sublime é a alegria de toda a terra; o monte Sião...", audioId: "1SnFLrHBX6WcGnXZGbiSgH674GSkVOXrV" },
-            2: { referencia: "Salmo 82", titulo: "Deus preside na assembleia divina", texto: "1. Deus preside na assembleia divina; no meio dos juízes, ele julga. 2. 'Até quando julgareis injustamente e tomareis o partido dos ímpios?'", audioId: "1RGUDwv7lE77R-sUFnpuNxru2sIpT92nR" },
-            3: { referencia: "Salmos 94:1-95:3", titulo: "O Eterno é Deus das vinganças", texto: "94:1. O Eterno é Deus das vinganças; resplandece! 94:2. Exalta-te, ó Juiz da terra; dá aos soberbos o que merecem.", audioId: "1G1ghCdXlq0IB4AH-d2ypug0vVram8ozg" },
-            4: { referencia: "Salmo 81", titulo: "Cantai alegremente a Deus", texto: "1. Cantai alegremente a Deus, nossa força; jubilai ao Deus de Jacó. 2. Entoai um cântico, tocai o tamborim...", audioId: "1DYQCe4XCVPRCjY2p2epgXF9GQCMZ9KDu" },
-            5: { referencia: "Salmo 93", titulo: "O Eterno reina!", texto: "1. O Eterno reina! Está vestido de majestade. O Eterno se vestiu e se cingiu de poder; o mundo também está estabelecido...", audioId: "1aE5Ri7KXKiISDtDNO0XfRKEeKDyvugIe" },
-            6: { referencia: "Salmo 92", titulo: "Bom é louvar ao Eterno", texto: "1. Bom é louvar ao Eterno e cantar louvores ao teu nome, ó Altíssimo, 2. anunciar de manhã a tua benignidade e, durante as noites, a tua fidelidade...", audioId: "1iKdIqmCkzkZE5nQi04HApSGVUMk2boF1" }
+            0: { referencia: "Salmo 24", titulo: "Do Eterno é a terra", texto: "1. Do Eterno é a terra e tudo o que nela existe...", audioId: "1zuO9EqKnikIl18v8-PZ1CbBnrY1DR2Lb" },
+            1: { referencia: "Salmo 48", titulo: "Grande é o Eterno", texto: "1. Grande é o Eterno e mui digno de louvor...", audioId: "1SnFLrHBX6WcGnXZGbiSgH674GSkVOXrV" },
+            2: { referencia: "Salmo 82", titulo: "Deus preside na assembleia divina", texto: "1. Deus preside na assembleia divina...", audioId: "1RGUDwv7lE77R-sUFnpuNxru2sIpT92nR" },
+            3: { referencia: "Salmos 94:1-95:3", titulo: "O Eterno é Deus das vinganças", texto: "94:1. O Eterno é Deus das vinganças...", audioId: "1G1ghCdXlq0IB4AH-d2ypug0vVram8ozg" },
+            4: { referencia: "Salmo 81", titulo: "Cantai alegremente a Deus", texto: "1. Cantai alegremente a Deus...", audioId: "1DYQCe4XCVPRCjY2p2epgXF9GQCMZ9KDu" },
+            5: { referencia: "Salmo 93", titulo: "O Eterno reina!", texto: "1. O Eterno reina! Está vestido de majestade...", audioId: "1aE5Ri7KXKiISDtDNO0XfRKEeKDyvugIe" },
+            6: { referencia: "Salmo 92", titulo: "Bom é louvar ao Eterno", texto: "1. Bom é louvar ao Eterno...", audioId: "1iKdIqmCkzkZE5nQi04HApSGVUMk2boF1" }
         };
 
         function carregarSalmoDia() {
@@ -80,7 +84,9 @@
             if (!container || !salmo) return;
             const nomeDia = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Shabat'][diaSemana];
             let html = `<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 16px;"><div style="font-size: 1.2rem; font-weight: bold; color: #b45309;">✨ ${salmo.referencia}</div><div style="font-size: 0.7rem; color: #6c6f6b;">${nomeDia}</div></div><div style="font-style: italic; font-size: 0.9rem; line-height: 1.6; margin-bottom: 16px;">"${salmo.titulo}"</div><div style="font-size: 0.85rem; line-height: 1.5; white-space: pre-line; background: #fff7ed; padding: 16px; border-radius: 16px;">${salmo.texto}</div>`;
-            
+            if (salmo.audioId) {
+                html += `<div style="margin-top: 16px; padding: 12px; background: #e7e5e4; border-radius: 20px;"><audio controls style="width: 100%;"><source src="https://drive.google.com/uc?export=download&id=${salmo.audioId}" type="audio/mpeg"></audio><div style="font-size: 0.6rem; color: #6c6f6b; margin-top: 8px; text-align: center;">🎶 Salmo musicado</div></div>`;
+            }
             container.innerHTML = html;
         }
 
@@ -105,32 +111,35 @@
             }
         }
 
-        // ========== CONTAGEM PÚBLICA ==========
+        // ========== PAINEL DE CONTAGEM PÚBLICA ==========
         async function carregarContagemPublica() {
             try {
                 const usuariosSnapshot = await getDocs(collection(db, 'usuarios'));
                 const totalUsuarios = usuariosSnapshot.size;
                 const totalParticipantesEl = document.getElementById('homeTotalParticipantes');
                 if (totalParticipantesEl) totalParticipantesEl.textContent = totalUsuarios;
+                
                 const diasSnapshot = await getDocs(collection(db, 'dias'));
                 let totalMarcacoes = 0;
                 diasSnapshot.forEach(doc => { totalMarcacoes += doc.data().total || 0; });
                 const totalMarcacoesEl = document.getElementById('homeTotalMarcacoes');
                 if (totalMarcacoesEl) totalMarcacoesEl.textContent = totalMarcacoes;
+                
                 const media = totalUsuarios > 0 ? (totalMarcacoes / totalUsuarios).toFixed(1) : 0;
                 const mediaEl = document.getElementById('homeMediaPorPessoa');
                 if (mediaEl) mediaEl.textContent = media;
+                
                 const hoje = new Date().toISOString().split('T')[0];
                 const hojeDoc = await getDoc(doc(db, 'dias', hoje));
                 const marcaramHoje = hojeDoc.data()?.total || 0;
                 const hojeEl = document.getElementById('homeHojeMarcaram');
                 if (hojeEl) hojeEl.textContent = marcaramHoje;
-                const DATA_INICIO = new Date(2026, 4, 16, 22, 0, 0);
-                const DIAS_TOTAIS = 384;
+                
                 const diffTime = new Date() - DATA_INICIO;
                 const diasDecorridos = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
                 const diasRestantes = Math.max(0, DIAS_TOTAIS - diasDecorridos);
                 const percentual = Math.min(100, (diasDecorridos / DIAS_TOTAIS) * 100);
+                
                 const diasDecorridosEl = document.getElementById('homeDiasDecorridos');
                 const diasRestantesEl = document.getElementById('homeDiasRestantes');
                 const percentualEl = document.getElementById('homePercentualJornada');
@@ -139,12 +148,175 @@
                 if (diasRestantesEl) diasRestantesEl.textContent = diasRestantes;
                 if (percentualEl) percentualEl.textContent = Math.floor(percentual);
                 if (progressoFill) progressoFill.style.width = percentual + '%';
-            } catch (error) {
-                console.error('Erro ao carregar contagem pública:', error);
-            }
+            } catch (error) { console.error('Erro ao carregar contagem:', error); }
         }
 
-        setInterval(carregarContagemPublica, 30000);
+        // ========== CALENDÁRIO COLETIVO ==========
+        async function gerarCalendario() {
+            const meses = [
+                { nome: "MAIO 2026", dias: 31, inicio: 5, ano: 2026, mesNum: 4, eventos: { 21: "🕯️ Shavuot", 22: "🕯️ Shavuot", 23: "🕯️ Shavuot ⭐" } },
+                { nome: "JUNHO 2026", dias: 30, inicio: 1, ano: 2026, mesNum: 5, eventos: {} },
+                { nome: "JULHO 2026", dias: 31, inicio: 3, ano: 2026, mesNum: 6, eventos: { 22: "🕯️ Tisha B'Av", 23: "🕯️ Tisha B'Av" } },
+                { nome: "AGOSTO 2026", dias: 31, inicio: 6, ano: 2026, mesNum: 7, eventos: {} },
+                { nome: "SETEMBRO 2026", dias: 30, inicio: 2, ano: 2026, mesNum: 8, eventos: { 11: "🕯️ Rosh Hashaná", 12: "🕯️ Rosh Hashaná ⭐", 13: "🕯️ Rosh Hashaná", 20: "🕯️ Yom Kippur", 21: "🕯️ Yom Kippur", 25: "🕯️ Sucot ⭐", 26: "🕯️ Sucot ⭐", 27: "🕯️ Sucot", 28: "🕯️ Sucot", 29: "🕯️ Sucot", 30: "🕯️ Sucot" } },
+                { nome: "OUTUBRO 2026", dias: 31, inicio: 4, ano: 2026, mesNum: 9, eventos: { 1: "🕯️ Sucot", 2: "🕯️ Shemini Atzeret ⭐", 3: "🕯️ Simchat Torá", 4: "⭐" } },
+                { nome: "NOVEMBRO 2026", dias: 30, inicio: 0, ano: 2026, mesNum: 10, eventos: {} },
+                { nome: "DEZEMBRO 2026", dias: 31, inicio: 2, ano: 2026, mesNum: 11, eventos: { 4: "🕯️ Chanucá ⭐", 5: "🕯️ Chanucá ⭐", 6: "🕯️ Chanucá", 7: "🕯️ Chanucá", 8: "🕯️ Chanucá", 9: "🕯️ Chanucá", 10: "🕯️ Chanucá", 11: "🕯️ Chanucá", 12: "🕯️ Chanucá ⭐" } },
+                { nome: "JANEIRO 2027", dias: 31, inicio: 5, ano: 2027, mesNum: 0, eventos: { 22: "🕯️ Tu BiShvat", 23: "🕯️ Tu BiShvat ⭐" } },
+                { nome: "FEVEREIRO 2027", dias: 28, inicio: 1, ano: 2027, mesNum: 1, eventos: {} },
+                { nome: "MARÇO 2027", dias: 31, inicio: 1, ano: 2027, mesNum: 2, eventos: { 22: "🕯️ Purim", 23: "🕯️ Purim" } },
+                { nome: "ABRIL 2027", dias: 30, inicio: 4, ano: 2027, mesNum: 3, eventos: { 21: "🕯️ Pêssach", 22: "🕯️ Pêssach", 23: "🕯️ Pêssach ⭐", 24: "🕯️ Pêssach", 25: "🕯️ Pêssach", 26: "🕯️ Pêssach", 27: "🕯️ Pêssach", 28: "🕯️ Pêssach" } },
+                { nome: "MAIO 2027", dias: 31, inicio: 6, ano: 2027, mesNum: 4, eventos: { 24: "🕯️ Lag BaOmer", 25: "🕯️ Lag BaOmer" } },
+                { nome: "JUNHO 2027", dias: 10, inicio: 2, ano: 2027, mesNum: 5, eventos: { 10: "🕯️ Shavuot", 11: "🕯️ Shavuot ⭐" } }
+            ];
+            
+            let marcacoesUsuario = new Set();
+            if (usuarioAtual) {
+                const q = query(collection(db, 'marcacoes_usuarios'), where('uid', '==', usuarioAtual.uid));
+                const snapshot = await getDocs(q);
+                snapshot.forEach(doc => marcacoesUsuario.add(doc.id.split('_')[1]));
+            }
+            
+            const diasSnapshot = await getDocs(collection(db, 'dias'));
+            const contadores = {};
+            diasSnapshot.forEach(doc => { contadores[doc.id] = doc.data().total; });
+            
+            const container = document.getElementById('calendar');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            for (const mes of meses) {
+                const monthDiv = document.createElement('div');
+                monthDiv.style.marginBottom = '20px';
+                monthDiv.style.border = '1px solid #e7e5e4';
+                monthDiv.style.borderRadius = '24px';
+                monthDiv.style.overflow = 'hidden';
+                
+                const header = document.createElement('div');
+                header.style.cssText = 'background: #2c3e2f; color: #fef3c7; padding: 12px 16px; font-weight: bold; cursor: pointer;';
+                header.innerHTML = `📅 ${mes.nome} <span style="float:right;">▼</span>`;
+                header.onclick = () => { const body = monthDiv.querySelector('.month-body'); body.style.display = body.style.display === 'grid' ? 'none' : 'grid'; };
+                monthDiv.appendChild(header);
+                
+                const body = document.createElement('div');
+                body.className = 'month-body';
+                body.style.cssText = 'display: none; padding: 16px; grid-template-columns: repeat(7, 1fr); gap: 6px;';
+                
+                const diasSemana = ['D','S','T','Q','Q','S','S'];
+                diasSemana.forEach(dia => { const diaDiv = document.createElement('div'); diaDiv.textContent = dia; diaDiv.style.cssText = 'font-weight: bold; color: #b45309; text-align: center;'; body.appendChild(diaDiv); });
+                
+                for (let i = 0; i < mes.inicio; i++) { const empty = document.createElement('div'); body.appendChild(empty); }
+                
+                for (let d = 1; d <= mes.dias; d++) {
+                    const dataStr = `${mes.ano}-${String(mes.mesNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const total = contadores[dataStr] || 0;
+                    const usuarioMarcou = marcacoesUsuario.has(dataStr);
+                    const evento = mes.eventos[d] || '';
+                    
+                    const dayDiv = document.createElement('div');
+                    dayDiv.className = 'day-cell';
+                    dayDiv.setAttribute('data-date', dataStr);
+                    
+                    let bgColor = '#fef9f0';
+                    let textColor = '#1e2a2e';
+                    if (usuarioMarcou) { bgColor = '#b45309'; textColor = 'white'; }
+                    if (evento.includes('🕯️') && !usuarioMarcou) { bgColor = '#d97706'; textColor = 'white'; }
+                    if (evento.includes('⭐') && !usuarioMarcou) { bgColor = '#4b5563'; textColor = 'white'; }
+                    
+                    dayDiv.style.cssText = `background: ${bgColor}; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db; color: ${textColor}; position: relative;`;
+                    if (usuarioMarcou && (evento.includes('🕯️') || evento.includes('⭐'))) dayDiv.style.outline = '2px solid #fbbf24';
+                    
+                    const dayNumber = document.createElement('div');
+                    dayNumber.style.fontWeight = 'bold';
+                    dayNumber.style.fontSize = '1rem';
+                    dayNumber.textContent = d;
+                    dayDiv.appendChild(dayNumber);
+                    
+                    if (evento) {
+                        const eventSpan = document.createElement('div');
+                        eventSpan.style.fontSize = '0.55rem';
+                        eventSpan.style.marginTop = '4px';
+                        eventSpan.textContent = evento;
+                        dayDiv.appendChild(eventSpan);
+                    }
+                    
+                    if (total > 0) {
+                        const contadorSpan = document.createElement('div');
+                        contadorSpan.style.cssText = 'font-size: 0.55rem; margin-top: 2px;';
+                        contadorSpan.textContent = `🔥 ${total}`;
+                        dayDiv.appendChild(contadorSpan);
+                    }
+                    
+                    dayDiv.onclick = (function(ds, el) { return () => marcarDia(ds, el); })(dataStr, dayDiv);
+                    body.appendChild(dayDiv);
+                }
+                monthDiv.appendChild(body);
+                container.appendChild(monthDiv);
+            }
+            
+            const hoje = new Date();
+            const mesAtual = hoje.getMonth();
+            const anoAtual = hoje.getFullYear();
+            const monthBodies = document.querySelectorAll('.month-body');
+            for (let i = 0; i < meses.length; i++) {
+                if (meses[i].ano === anoAtual && meses[i].mesNum === mesAtual && monthBodies[i]) { monthBodies[i].style.display = 'grid'; break; }
+            }
+            if (monthBodies[0] && !document.querySelector('.month-body[style*="grid"]')) { monthBodies[0].style.display = 'grid'; }
+        }
+
+        window.marcarDia = async (dataStr, buttonElement) => {
+            if (!usuarioAtual) {
+                alert('Faça login para marcar dias no calendário.');
+                return;
+            }
+            
+            const diaRef = doc(db, 'dias', dataStr);
+            const userMarcouRef = doc(db, 'marcacoes_usuarios', `${usuarioAtual.uid}_${dataStr}`);
+            const userMarcouSnap = await getDoc(userMarcouRef);
+            
+            if (userMarcouSnap.exists()) {
+                await runTransaction(db, async (transaction) => {
+                    const diaDoc = await transaction.get(diaRef);
+                    const novoTotal = (diaDoc.data()?.total || 1) - 1;
+                    if (novoTotal <= 0) { transaction.delete(diaRef); }
+                    else { transaction.set(diaRef, { total: novoTotal, data: dataStr }, { merge: true }); }
+                    transaction.delete(userMarcouRef);
+                });
+                buttonElement.classList.remove('marked');
+                buttonElement.style.background = '#fef9f0';
+            } else {
+                await runTransaction(db, async (transaction) => {
+                    const diaDoc = await transaction.get(diaRef);
+                    const novoTotal = (diaDoc.data()?.total || 0) + 1;
+                    transaction.set(diaRef, { total: novoTotal, data: dataStr }, { merge: true });
+                    transaction.set(userMarcouRef, { uid: usuarioAtual.uid, data: dataStr });
+                });
+                buttonElement.classList.add('marked');
+                buttonElement.style.background = '#b45309';
+                buttonElement.style.color = 'white';
+            }
+            await carregarContagemPublica();
+            await atualizarContadoresCalendario();
+        };
+
+        async function atualizarContadoresCalendario() {
+            const diasSnapshot = await getDocs(collection(db, 'dias'));
+            const contadores = {};
+            diasSnapshot.forEach(doc => { contadores[doc.id] = doc.data().total; });
+            
+            document.querySelectorAll('.day-cell').forEach(cell => {
+                const dataStr = cell.getAttribute('data-date');
+                const total = contadores[dataStr] || 0;
+                let contadorSpan = cell.querySelector('.contador-dia');
+                if (!contadorSpan && total > 0) {
+                    contadorSpan = document.createElement('div');
+                    contadorSpan.className = 'contador-dia';
+                    contadorSpan.style.cssText = 'font-size: 0.55rem; margin-top: 2px;';
+                    cell.appendChild(contadorSpan);
+                }
+                if (contadorSpan) contadorSpan.textContent = total > 0 ? `🔥 ${total}` : '';
+            });
+        }
 
         // ========== MURO DE ORAÇÕES ==========
         function setupContador(textareaId, contadorId) {
@@ -162,9 +334,14 @@
         async function novoPost(texto) {
             if (!usuarioAtual) { alert('Faça login para postar.'); return false; }
             if (texto.length > 500) { alert('Máximo 500 caracteres.'); return false; }
-            if (texto.trim().length < 3) { alert('Mensagem muito curta.'); return false; }
             try {
-                await addDoc(collection(db, 'posts'), { texto: texto.trim(), autor_nick: usuarioNickname, autor_uid: usuarioAtual.uid, createdAt: new Date().toISOString(), likes: [] });
+                await addDoc(collection(db, 'posts'), {
+                    texto: texto.trim(),
+                    autor_nick: usuarioNickname,
+                    autor_uid: usuarioAtual.uid,
+                    createdAt: new Date().toISOString(),
+                    likes: []
+                });
                 return true;
             } catch (error) { alert('Erro ao postar.'); return false; }
         }
@@ -173,7 +350,14 @@
             if (!usuarioAtual) { alert('Faça login para responder.'); return false; }
             if (texto.length > 500) { alert('Máximo 500 caracteres.'); return false; }
             try {
-                const respostaRef = await addDoc(collection(db, 'respostas'), { post_id: postId, texto: texto.trim(), autor_nick: usuarioNickname, autor_uid: usuarioAtual.uid, createdAt: new Date().toISOString(), likes: [] });
+                const respostaRef = await addDoc(collection(db, 'respostas'), {
+                    post_id: postId,
+                    texto: texto.trim(),
+                    autor_nick: usuarioNickname,
+                    autor_uid: usuarioAtual.uid,
+                    createdAt: new Date().toISOString(),
+                    likes: []
+                });
                 const postRef = doc(db, 'posts', postId);
                 await updateDoc(postRef, { respostas: arrayUnion(respostaRef.id) });
                 return true;
@@ -239,125 +423,134 @@
                 const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
                 const userData = userDoc.data();
                 usuarioNickname = userData?.nickname || user.email.split('@')[0];
-                splashScreen.style.display = 'none';
-                homeScreen.style.display = 'block';
-                if (userNicknameSpan) userNicknameSpan.textContent = usuarioNickname;
-                if (userEmailSpan) userEmailSpan.textContent = user.email;
-                if (authStatus) authStatus.textContent = `Logado como ${usuarioNickname}`;
-                if (novoPostForm) novoPostForm.style.display = 'block';
+                loginArea.style.display = 'none';
+                userInfo.style.display = 'block';
+                userNicknameSpan.textContent = usuarioNickname;
+                userEmailSpan.textContent = user.email;
+                novoPostForm.style.display = 'block';
+                authStatus.textContent = `Logado como ${usuarioNickname}`;
                 configurarNovoPost();
-                await carregarContagemPublica();
             } else {
                 usuarioNickname = null;
-                splashScreen.style.display = 'flex';
-                homeScreen.style.display = 'none';
-                if (novoPostForm) novoPostForm.style.display = 'none';
+                loginArea.style.display = 'block';
+                userInfo.style.display = 'none';
+                novoPostForm.style.display = 'none';
+                authStatus.textContent = '';
             }
+            await gerarCalendario();
+            await carregarContagemPublica();
         });
 
         // Inicializar
         carregarSalmoDia();
         carregarEstudoFFOZ();
-        carregarContagemPublica();
         carregarMural();
+        carregarContagemPublica();
     </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f5f3ef; color: #1e2a2e; padding: 20px; line-height: 1.5; }
         .container { max-width: 1200px; margin: 0 auto; }
-        .splash { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 80vh; text-align: center; }
-        .splash h1 { font-size: 2rem; color: #b45309; margin-bottom: 16px; }
+        
         .card-section { background: white; border-radius: 28px; padding: 24px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e7e5e4; }
         .card-section h2 { color: #b45309; margin-bottom: 16px; font-size: 1.3rem; border-left: 4px solid #b45309; padding-left: 12px; }
         .aviso { font-size: 0.7rem; color: #6c6f6b; margin-bottom: 16px; padding: 8px; background: #fef9f0; border-radius: 16px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: #fff7ed; border-radius: 20px; padding: 16px; text-align: center; }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #b45309; }
+        .stat-label { font-size: 0.7rem; color: #6c6f6b; margin-top: 4px; }
+        
+        .progress-bar-bg { background: #e7e5e4; border-radius: 20px; height: 16px; overflow: hidden; margin: 12px 0; }
+        .progress-fill { background: #b45309; width: 0%; height: 100%; transition: width 0.3s; }
+        
         .btn { padding: 12px 32px; border: none; border-radius: 40px; font-size: 1rem; cursor: pointer; background: #b45309; color: white; font-weight: bold; }
         .btn:hover { background: #9a3e06; }
         .btn-small { padding: 6px 12px; font-size: 0.8rem; background: #b45309; color: white; border: none; border-radius: 40px; cursor: pointer; }
         .google-btn { background: #4285f4; }
         .google-btn:hover { background: #357ae8; }
+        
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         footer { text-align: center; margin-top: 40px; padding-top: 20px; font-size: 0.7rem; color: #6c6f6b; border-top: 1px solid #e7e5e4; }
         .versiculo { font-style: italic; color: #6c6f6b; font-size: 0.85rem; text-align: center; margin-bottom: 20px; }
         textarea { width: 100%; padding: 12px; border-radius: 20px; border: 1px solid #e7e5e4; background: #fef9f0; font-family: inherit; resize: vertical; margin-bottom: 8px; }
-        .auth-status { font-size: 0.7rem; color: #6c6f6b; margin-top: 8px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 20px; }
-        .stat-card { background: #fff7ed; border-radius: 20px; padding: 16px; text-align: center; }
-        .stat-number { font-size: 2rem; font-weight: bold; color: #b45309; }
-        .stat-label { font-size: 0.7rem; color: #6c6f6b; margin-top: 4px; }
-        .progress-bar-bg { background: #e7e5e4; border-radius: 20px; height: 16px; overflow: hidden; margin: 12px 0; }
-        .progress-fill { background: #b45309; width: 0%; height: 100%; transition: width 0.3s; }
+        
+        .day-cell { background: #fef9f0; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db; }
+        .day-cell.marked { background: #b45309; color: white; }
     </style>
 </head>
 <body>
 <div class="container">
-    <div id="splashScreen" class="splash">
-        <h1>📆 Calendário do Jornaleiro</h1>
-        <p class="versiculo">"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</p>
-        <button class="btn google-btn" onclick="loginComGoogle()">🔐 Entrar com Google</button>
-        <p style="margin-top: 20px; font-size: 0.75rem;">🔒 Faça login para participar do Muro de Orações e acessar o Calendário Coletivo.</p>
-    </div>
-
-    <div id="homeScreen" style="display: none;">
-        <div class="top-bar">
-            <h1 style="font-size: 1.5rem;">📆 Calendário do Jornaleiro</h1>
-            <div><span id="userNickname" style="font-weight: bold; color: #b45309;"></span><span id="userEmail" style="font-size: 0.7rem; color: #6c6f6b; margin-left: 8px;"></span><button class="btn-small" onclick="logout()" style="margin-left: 10px;">Sair</button></div>
+    <div class="top-bar">
+        <h1 style="font-size: 1.5rem;">📆 Calendário do Jornaleiro</h1>
+        <div id="loginArea">
+            <button class="btn google-btn" onclick="loginComGoogle()">🔐 Entrar com Google</button>
         </div>
-        <div class="auth-status" id="authStatus"></div>
-
-        <!-- PAINEL DE CONTAGEM PÚBLICO -->
-        <div class="card-section">
-            <h2>📊 Propósito em Números</h2>
-            <div class="aviso">🔥 Dados atualizados em tempo real - cada clique no calendário conta!</div>
-            <div class="stats-grid">
-                <div class="stat-card"><div class="stat-number" id="homeTotalParticipantes">0</div><div class="stat-label">Participantes</div></div>
-                <div class="stat-card"><div class="stat-number" id="homeTotalMarcacoes">0</div><div class="stat-label">Total de Marcações</div></div>
-                <div class="stat-card"><div class="stat-number" id="homeMediaPorPessoa">0</div><div class="stat-label">Média por Pessoa</div></div>
-                <div class="stat-card"><div class="stat-number" id="homeHojeMarcaram">0</div><div class="stat-label">Marcaram Hoje</div></div>
-            </div>
-            <div style="margin: 16px 0;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span>📅 Dias decorridos: <strong id="homeDiasDecorridos">0</strong> / <strong id="homeDiasRestantes">384</strong></span>
-                    <span><strong id="homePercentualJornada">0</strong>% completo</span>
-                </div>
-                <div class="progress-bar-bg"><div class="progress-fill" id="homeProgressoJornadaFill"></div></div>
-            </div>
-            <div style="text-align: center; margin-top: 8px;"><span class="aviso">📅 Início: 16/05/2026 | 📆 Término previsto: ~03/06/2027</span></div>
-        </div>
-
-        <!-- SALMO DO DIA -->
-        <div class="card-section">
-            <h2>📖 Salmo do Dia - Shir Shel Yom</h2>
-            <div class="aviso">🎵 Cada dia da semana tem um Salmo específico - tradição do Templo de Jerusalém</div>
-            <div id="conteudoSalmo" style="background: #fef9f0; border-radius: 20px; padding: 20px; margin-top: 16px;"><div style="text-align: center;">Carregando salmo...</div></div>
-        </div>
-
-        <!-- ESTUDO FFOZ -->
-        <div class="card-section">
-            <h2>📖 Estudo da Semana - Torah Portions (FFOZ)</h2>
-            <div class="aviso">🕯️ Leitura coordenada da Torá, Profetas (Haftarah) e Evangelho - ciclo judaico anual</div>
-            <div id="conteudoEstudo" style="background: #fef9f0; border-radius: 20px; padding: 20px; margin-top: 16px;"><div style="text-align: center;">Carregando estudo...</div></div>
-        </div>
-
-        <!-- IR PARA CALENDÁRIO -->
-        <div class="card-section" style="text-align: center;">
-            <button class="btn" onclick="irParaCalendario()">📅 Ir para o Calendário Coletivo</button>
-            <div class="aviso" style="margin-top: 12px;">🔒 Clique aqui para marcar seus dias de jejum e oração, ver estatísticas e acompanhar o propósito!</div>
-        </div>
-
-        <!-- MURO DE ORAÇÕES -->
-        <div class="card-section">
-            <h2>✍️ Muro de Orações</h2>
-            <div class="aviso">🙏 <strong>Espaço de conversa entre membros</strong><br>- Compartilhe necessidades, dores, pedidos de oração, agradecimentos<br>- Responda com empatia e amor<br>- 📏 Limite de 500 caracteres<br>- ❌ Sem pregações ou "mensagem do dia"</div>
-            <div id="novoPostForm" style="margin-bottom: 24px; display: none;">
-                <textarea id="novoPostTexto" rows="3" maxlength="500" placeholder="Escreva seu pedido de oração, desabafo, testemunho... (máx. 500 caracteres)"></textarea>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                    <span id="novoPostContador" style="font-size: 0.7rem; color: #6c6f6b;">0 / 500</span>
-                    <button id="btnNovoPost" class="btn-small">📢 Postar oração</button>
-                </div>
-            </div>
-            <div id="listaPosts" style="max-height: 600px; overflow-y: auto;"><div style="text-align: center; padding: 20px;">Carregando conversas...</div></div>
+        <div id="userInfo" style="display: none;">
+            <span id="userNickname" style="font-weight: bold; color: #b45309;"></span>
+            <span id="userEmail" style="font-size: 0.7rem; color: #6c6f6b; margin-left: 8px;"></span>
+            <button class="btn-small" onclick="logout()" style="margin-left: 10px;">Sair</button>
         </div>
     </div>
+    <div id="authStatus" class="auth-status" style="font-size: 0.7rem; text-align: right; margin-bottom: 16px;"></div>
+
+    <p class="versiculo">"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</p>
+
+    <!-- PAINEL DE CONTAGEM PÚBLICO -->
+    <div class="card-section">
+        <h2>📊 Propósito em Números</h2>
+        <div class="aviso">🔥 Dados atualizados em tempo real - cada clique no calendário conta!</div>
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-number" id="homeTotalParticipantes">0</div><div class="stat-label">Participantes</div></div>
+            <div class="stat-card"><div class="stat-number" id="homeTotalMarcacoes">0</div><div class="stat-label">Total de Marcações</div></div>
+            <div class="stat-card"><div class="stat-number" id="homeMediaPorPessoa">0</div><div class="stat-label">Média por Pessoa</div></div>
+            <div class="stat-card"><div class="stat-number" id="homeHojeMarcaram">0</div><div class="stat-label">Marcaram Hoje</div></div>
+        </div>
+        <div style="margin: 16px 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span>📅 Dias decorridos: <strong id="homeDiasDecorridos">0</strong> / <strong id="homeDiasRestantes">384</strong></span>
+                <span><strong id="homePercentualJornada">0</strong>% completo</span>
+            </div>
+            <div class="progress-bar-bg"><div class="progress-fill" id="homeProgressoJornadaFill"></div></div>
+        </div>
+        <div style="text-align: center; margin-top: 8px;"><span class="aviso">📅 Início: 16/05/2026 | 📆 Término previsto: ~03/06/2027</span></div>
+    </div>
+
+    <!-- SALMO DO DIA -->
+    <div class="card-section">
+        <h2>📖 Salmo do Dia - Shir Shel Yom</h2>
+        <div class="aviso">🎵 Cada dia da semana tem um Salmo específico - tradição do Templo de Jerusalém</div>
+        <div id="conteudoSalmo" style="background: #fef9f0; border-radius: 20px; padding: 20px; margin-top: 16px;"><div style="text-align: center;">Carregando salmo...</div></div>
+    </div>
+
+    <!-- ESTUDO FFOZ -->
+    <div class="card-section">
+        <h2>📖 Estudo da Semana - Torah Portions (FFOZ)</h2>
+        <div class="aviso">🕯️ Leitura coordenada da Torá, Profetas (Haftarah) e Evangelho - ciclo judaico anual</div>
+        <div id="conteudoEstudo" style="background: #fef9f0; border-radius: 20px; padding: 20px; margin-top: 16px;"><div style="text-align: center;">Carregando estudo...</div></div>
+    </div>
+
+    <!-- CALENDÁRIO COLETIVO -->
+    <div class="card-section">
+        <h2>📅 Calendário Coletivo</h2>
+        <div class="aviso">🔥 Clique em qualquer dia que você jejuou e orou. O número 🔥 mostra quantas pessoas marcaram aquele dia. <strong>Faça login para marcar</strong>.</div>
+        <div id="calendar"></div>
+    </div>
+
+    <!-- MURO DE ORAÇÕES -->
+    <div class="card-section">
+        <h2>✍️ Muro de Orações</h2>
+        <div class="aviso">🙏 <strong>Espaço de conversa entre membros</strong><br>- Compartilhe necessidades, dores, pedidos de oração<br>- Responda com empatia e amor<br>- 📏 Limite de 500 caracteres<br>- ❌ Sem pregações ou "mensagem do dia"</div>
+        <div id="novoPostForm" style="margin-bottom: 24px; display: none;">
+            <textarea id="novoPostTexto" rows="3" maxlength="500" placeholder="Escreva seu pedido de oração, desabafo... (máx. 500 caracteres)"></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                <span id="novoPostContador" style="font-size: 0.7rem; color: #6c6f6b;">0 / 500</span>
+                <button id="btnNovoPost" class="btn-small">📢 Postar oração</button>
+            </div>
+        </div>
+        <div id="listaPosts" style="max-height: 600px; overflow-y: auto;"><div style="text-align: center; padding: 20px;">Carregando conversas...</div></div>
+    </div>
+
     <footer><p>🙏 Propósito de oração e jejum - 384 dias - Início: 16/05/2026</p></footer>
 </div>
 </body>
