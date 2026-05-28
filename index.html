@@ -138,7 +138,41 @@
                 `;
             }
         }
-
+        <!-- PAINEL DE CONTAGEM PÚBLICO -->
+        <div class="card-section">
+            <h2>📊 Propósito em Números</h2>
+            <div class="aviso">🔥 Dados atualizados em tempo real - cada clique no calendário conta!</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="homeTotalParticipantes">0</div>
+                    <div class="stat-label">Participantes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="homeTotalMarcacoes">0</div>
+                    <div class="stat-label">Total de Marcações</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="homeMediaPorPessoa">0</div>
+                    <div class="stat-label">Média por Pessoa</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="homeHojeMarcaram">0</div>
+                    <div class="stat-label">Marcaram Hoje</div>
+                </div>
+            </div>
+            <div style="margin: 16px 0;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>📅 Dias decorridos: <strong id="homeDiasDecorridos">0</strong> / <strong id="homeDiasRestantes">384</strong></span>
+                    <span><strong id="homePercentualJornada">0</strong>% completo</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-fill" id="homeProgressoJornadaFill"></div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 8px;">
+                <span class="aviso">📅 Início: 16/05/2026 | 📆 Término previsto: ~03/06/2027</span>
+            </div>
+        </div>
         // ========== MURO DE ORAÇÕES (Threads) ==========
         function setupContador(textareaId, contadorId) {
             const textarea = document.getElementById(textareaId);
