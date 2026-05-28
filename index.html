@@ -202,98 +202,115 @@
 
         // ========== GERAR CALENDÁRIO ==========
         async function gerarCalendario() {
-            const meses = [
-                { nome: "MAIO 2026", dias: 31, inicio: 5, ano: 2026, mesNum: 4 },
-                { nome: "JUNHO 2026", dias: 30, inicio: 1, ano: 2026, mesNum: 5 },
-                { nome: "JULHO 2026", dias: 31, inicio: 3, ano: 2026, mesNum: 6 },
-                { nome: "AGOSTO 2026", dias: 31, inicio: 6, ano: 2026, mesNum: 7 },
-                { nome: "SETEMBRO 2026", dias: 30, inicio: 2, ano: 2026, mesNum: 8 },
-                { nome: "OUTUBRO 2026", dias: 31, inicio: 4, ano: 2026, mesNum: 9 },
-                { nome: "NOVEMBRO 2026", dias: 30, inicio: 0, ano: 2026, mesNum: 10 },
-                { nome: "DEZEMBRO 2026", dias: 31, inicio: 2, ano: 2026, mesNum: 11 },
-                { nome: "JANEIRO 2027", dias: 31, inicio: 5, ano: 2027, mesNum: 0 },
-                { nome: "FEVEREIRO 2027", dias: 28, inicio: 1, ano: 2027, mesNum: 1 },
-                { nome: "MARÇO 2027", dias: 31, inicio: 1, ano: 2027, mesNum: 2 },
-                { nome: "ABRIL 2027", dias: 30, inicio: 4, ano: 2027, mesNum: 3 },
-                { nome: "MAIO 2027", dias: 31, inicio: 6, ano: 2027, mesNum: 4 },
-                { nome: "JUNHO 2027", dias: 10, inicio: 2, ano: 2027, mesNum: 5 }
-            ];
+    const meses = [
+        { nome: "MAIO 2026", dias: 31, inicio: 5, ano: 2026, mesNum: 4, eventos: { 21: "🕯️ Shavuot", 22: "🕯️ Shavuot", 23: "🕯️ Shavuot ⭐" } },
+        { nome: "JUNHO 2026", dias: 30, inicio: 1, ano: 2026, mesNum: 5, eventos: {} },
+        { nome: "JULHO 2026", dias: 31, inicio: 3, ano: 2026, mesNum: 6, eventos: { 22: "🕯️ Tisha B'Av", 23: "🕯️ Tisha B'Av" } },
+        { nome: "AGOSTO 2026", dias: 31, inicio: 6, ano: 2026, mesNum: 7, eventos: {} },
+        { nome: "SETEMBRO 2026", dias: 30, inicio: 2, ano: 2026, mesNum: 8, eventos: { 11: "🕯️ Rosh Hashaná", 12: "🕯️ Rosh Hashaná ⭐", 13: "🕯️ Rosh Hashaná", 20: "🕯️ Yom Kippur", 21: "🕯️ Yom Kippur", 25: "🕯️ Sucot ⭐", 26: "🕯️ Sucot ⭐", 27: "🕯️ Sucot", 28: "🕯️ Sucot", 29: "🕯️ Sucot", 30: "🕯️ Sucot" } },
+        { nome: "OUTUBRO 2026", dias: 31, inicio: 4, ano: 2026, mesNum: 9, eventos: { 1: "🕯️ Sucot", 2: "🕯️ Shemini Atzeret ⭐", 3: "🕯️ Simchat Torá", 4: "⭐" } },
+        { nome: "NOVEMBRO 2026", dias: 30, inicio: 0, ano: 2026, mesNum: 10, eventos: {} },
+        { nome: "DEZEMBRO 2026", dias: 31, inicio: 2, ano: 2026, mesNum: 11, eventos: { 4: "🕯️ Chanucá ⭐", 5: "🕯️ Chanucá ⭐", 6: "🕯️ Chanucá", 7: "🕯️ Chanucá", 8: "🕯️ Chanucá", 9: "🕯️ Chanucá", 10: "🕯️ Chanucá", 11: "🕯️ Chanucá", 12: "🕯️ Chanucá ⭐" } },
+        { nome: "JANEIRO 2027", dias: 31, inicio: 5, ano: 2027, mesNum: 0, eventos: { 22: "🕯️ Tu BiShvat", 23: "🕯️ Tu BiShvat ⭐" } },
+        { nome: "FEVEREIRO 2027", dias: 28, inicio: 1, ano: 2027, mesNum: 1, eventos: {} },
+        { nome: "MARÇO 2027", dias: 31, inicio: 1, ano: 2027, mesNum: 2, eventos: { 22: "🕯️ Purim", 23: "🕯️ Purim" } },
+        { nome: "ABRIL 2027", dias: 30, inicio: 4, ano: 2027, mesNum: 3, eventos: { 21: "🕯️ Pêssach", 22: "🕯️ Pêssach", 23: "🕯️ Pêssach ⭐", 24: "🕯️ Pêssach", 25: "🕯️ Pêssach", 26: "🕯️ Pêssach", 27: "🕯️ Pêssach", 28: "🕯️ Pêssach" } },
+        { nome: "MAIO 2027", dias: 31, inicio: 6, ano: 2027, mesNum: 4, eventos: { 24: "🕯️ Lag BaOmer", 25: "🕯️ Lag BaOmer" } },
+        { nome: "JUNHO 2027", dias: 10, inicio: 2, ano: 2027, mesNum: 5, eventos: { 10: "🕯️ Shavuot", 11: "🕯️ Shavuot ⭐" } }
+    ];
+    
+    let marcacoesUsuario = new Set();
+    if (usuarioAtual) {
+        const q = query(collection(db, 'marcacoes_usuarios'), where('uid', '==', usuarioAtual.uid));
+        const snapshot = await getDocs(q);
+        snapshot.forEach(doc => marcacoesUsuario.add(doc.id.split('_')[1]));
+    }
+    
+    const diasSnapshot = await getDocs(collection(db, 'dias'));
+    const contadores = {};
+    diasSnapshot.forEach(doc => { contadores[doc.id] = doc.data().total; });
+    
+    calendarDiv.innerHTML = '';
+    
+    for (const mes of meses) {
+        const monthDiv = document.createElement('div');
+        monthDiv.style.marginBottom = '20px';
+        monthDiv.style.border = '1px solid #e7e5e4';
+        monthDiv.style.borderRadius = '24px';
+        monthDiv.style.overflow = 'hidden';
+        
+        const header = document.createElement('div');
+        header.style.cssText = 'background: #2c3e2f; color: #fef3c7; padding: 12px 16px; font-weight: bold; cursor: pointer;';
+        header.innerHTML = `📅 ${mes.nome} <span style="float:right;">▼</span>`;
+        header.onclick = () => { const body = monthDiv.querySelector('.month-body'); body.style.display = body.style.display === 'grid' ? 'none' : 'grid'; };
+        monthDiv.appendChild(header);
+        
+        const body = document.createElement('div');
+        body.className = 'month-body';
+        body.style.cssText = 'display: none; padding: 16px; grid-template-columns: repeat(7, 1fr); gap: 6px;';
+        
+        const diasSemana = ['D','S','T','Q','Q','S','S'];
+        diasSemana.forEach(dia => { const diaDiv = document.createElement('div'); diaDiv.textContent = dia; diaDiv.style.cssText = 'font-weight: bold; color: #b45309; text-align: center;'; body.appendChild(diaDiv); });
+        
+        for (let i = 0; i < mes.inicio; i++) { const empty = document.createElement('div'); body.appendChild(empty); }
+        
+        for (let d = 1; d <= mes.dias; d++) {
+            const dataStr = `${mes.ano}-${String(mes.mesNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const total = contadores[dataStr] || 0;
+            const usuarioMarcou = marcacoesUsuario.has(dataStr);
+            const evento = mes.eventos[d] || '';
             
-            let marcacoesUsuario = new Set();
-            if (usuarioAtual) {
-                const q = query(collection(db, 'marcacoes_usuarios'), where('uid', '==', usuarioAtual.uid));
-                const snapshot = await getDocs(q);
-                snapshot.forEach(doc => marcacoesUsuario.add(doc.id.split('_')[1]));
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'day-cell';
+            dayDiv.setAttribute('data-date', dataStr);
+            
+            let bgColor = '#fef9f0';
+            let textColor = '#1e2a2e';
+            if (usuarioMarcou) { bgColor = '#b45309'; textColor = 'white'; }
+            if (evento.includes('🕯️') && !usuarioMarcou) { bgColor = '#d97706'; textColor = 'white'; }
+            if (evento.includes('⭐') && !usuarioMarcou) { bgColor = '#4b5563'; textColor = 'white'; }
+            
+            dayDiv.style.cssText = `background: ${bgColor}; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db; color: ${textColor};`;
+            if (usuarioMarcou && (evento.includes('🕯️') || evento.includes('⭐'))) dayDiv.style.outline = '2px solid #fbbf24';
+            
+            const dayNumber = document.createElement('div');
+            dayNumber.style.fontWeight = 'bold';
+            dayNumber.style.fontSize = '1rem';
+            dayNumber.textContent = d;
+            dayDiv.appendChild(dayNumber);
+            
+            if (evento) {
+                const eventSpan = document.createElement('div');
+                eventSpan.style.fontSize = '0.55rem';
+                eventSpan.style.marginTop = '4px';
+                eventSpan.textContent = evento;
+                dayDiv.appendChild(eventSpan);
             }
             
-            const diasSnapshot = await getDocs(collection(db, 'dias'));
-            const contadores = {};
-            diasSnapshot.forEach(doc => { contadores[doc.id] = doc.data().total; });
-            
-            calendarDiv.innerHTML = '';
-            
-            for (const mes of meses) {
-                const monthDiv = document.createElement('div');
-                monthDiv.style.marginBottom = '20px';
-                monthDiv.style.border = '1px solid #e7e5e4';
-                monthDiv.style.borderRadius = '24px';
-                monthDiv.style.overflow = 'hidden';
-                
-                const header = document.createElement('div');
-                header.style.cssText = 'background: #2c3e2f; color: #fef3c7; padding: 12px 16px; font-weight: bold; cursor: pointer;';
-                header.innerHTML = `📅 ${mes.nome} <span style="float:right;">▼</span>`;
-                header.onclick = () => { const body = monthDiv.querySelector('.month-body'); body.style.display = body.style.display === 'grid' ? 'none' : 'grid'; };
-                monthDiv.appendChild(header);
-                
-                const body = document.createElement('div');
-                body.className = 'month-body';
-                body.style.cssText = 'display: none; padding: 16px; grid-template-columns: repeat(7, 1fr); gap: 6px;';
-                
-                const diasSemana = ['D','S','T','Q','Q','S','S'];
-                diasSemana.forEach(dia => { const diaDiv = document.createElement('div'); diaDiv.textContent = dia; diaDiv.style.cssText = 'font-weight: bold; color: #b45309; text-align: center;'; body.appendChild(diaDiv); });
-                
-                for (let i = 0; i < mes.inicio; i++) { const empty = document.createElement('div'); body.appendChild(empty); }
-                
-                for (let d = 1; d <= mes.dias; d++) {
-                    const dataStr = `${mes.ano}-${String(mes.mesNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                    const total = contadores[dataStr] || 0;
-                    const usuarioMarcou = marcacoesUsuario.has(dataStr);
-                    
-                    const dayDiv = document.createElement('div');
-                    dayDiv.className = 'day-cell';
-                    dayDiv.setAttribute('data-date', dataStr);
-                    dayDiv.style.cssText = 'background: #fef9f0; border-radius: 16px; padding: 8px 4px; text-align: center; cursor: pointer; border: 1px solid #f0e7db;' + (usuarioMarcou ? ' background: #b45309; color: white;' : '');
-                    
-                    const dayNumber = document.createElement('div');
-                    dayNumber.style.fontWeight = 'bold';
-                    dayNumber.style.fontSize = '1rem';
-                    dayNumber.textContent = d;
-                    dayDiv.appendChild(dayNumber);
-                    
-                    if (total > 0) {
-                        const contadorSpan = document.createElement('div');
-                        contadorSpan.className = 'contador-dia';
-                        contadorSpan.style.cssText = 'font-size: 0.6rem; margin-top: 4px;';
-                        contadorSpan.textContent = `🔥 ${total}`;
-                        dayDiv.appendChild(contadorSpan);
-                    }
-                    
-                    dayDiv.onclick = (function(ds, el) { return () => marcarDia(ds, el); })(dataStr, dayDiv);
-                    body.appendChild(dayDiv);
-                }
-                monthDiv.appendChild(body);
-                calendarDiv.appendChild(monthDiv);
+            if (total > 0) {
+                const contadorSpan = document.createElement('div');
+                contadorSpan.className = 'contador-dia';
+                contadorSpan.style.cssText = 'font-size: 0.55rem; margin-top: 2px;';
+                contadorSpan.textContent = `🔥 ${total}`;
+                dayDiv.appendChild(contadorSpan);
             }
             
-            const hoje = new Date();
-            const mesAtual = hoje.getMonth();
-            const anoAtual = hoje.getFullYear();
-            const monthBodies = document.querySelectorAll('.month-body');
-            for (let i = 0; i < meses.length; i++) {
-                if (meses[i].ano === anoAtual && meses[i].mesNum === mesAtual && monthBodies[i]) { monthBodies[i].style.display = 'grid'; break; }
-            }
-            if (monthBodies[0] && !document.querySelector('.month-body[style*="grid"]')) { monthBodies[0].style.display = 'grid'; }
+            dayDiv.onclick = (function(ds, el) { return () => marcarDia(ds, el); })(dataStr, dayDiv);
+            body.appendChild(dayDiv);
         }
+        monthDiv.appendChild(body);
+        calendarDiv.appendChild(monthDiv);
+    }
+    
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    const monthBodies = document.querySelectorAll('.month-body');
+    for (let i = 0; i < meses.length; i++) {
+        if (meses[i].ano === anoAtual && meses[i].mesNum === mesAtual && monthBodies[i]) { monthBodies[i].style.display = 'grid'; break; }
+    }
+    if (monthBodies[0] && !document.querySelector('.month-body[style*="grid"]')) { monthBodies[0].style.display = 'grid'; }
+}
 
         // ========== OBSERVADOR ==========
         onAuthStateChanged(auth, async (user) => {
