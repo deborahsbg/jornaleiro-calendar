@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Jornaleiro | Alcance Messiânico</title>
+    <link rel="stylesheet" href="css/style.css">
+    <div id="google_translate_element" style="display: none;"></div>
+</head>
+<body>
+<div class="container">
+    <div class="top-bar">
+        <h1>📆 Calendário do Jornaleiro</h1>
+        <div id="loginArea">
+            <button class="btn google-btn" id="loginBtn">🔐 Entrar com Google</button>
+        </div>
+        <div id="userInfo" style="display: none;">
+            <span id="userNickname" style="font-weight: bold; color: #b45309;"></span>
+            <span id="userEmail" style="font-size: 0.7rem; color: #6c6f6b; margin-left: 8px;"></span>
+            <button class="btn-small" id="logoutBtn">Sair</button>
+        </div>
+    </div>
+    <div class="versiculo">"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</div>
+
+    <div id="nav-bar-placeholder"></div>
+
+    <div class="desktop-grid">
+        <aside class="desktop-left">
+            <div class="card-section">
+                <h2>📊 Jornada do Jornaleiro</h2>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-number" id="totalParticipantes">0</div><div class="stat-label">Participantes</div></div>
+                    <div class="stat-card"><div class="stat-number" id="totalMarcacoes">0</div><div class="stat-label">Total de Marcações</div></div>
+                    <div class="stat-card"><div class="stat-number" id="mediaPorPessoa">0</div><div class="stat-label">Média por Pessoa</div></div>
+                    <div class="stat-card"><div class="stat-number" id="hojeMarcaram">0</div><div class="stat-label">Marcaram Hoje</div></div>
+                </div>
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>📅 Dias decorridos: <strong id="diasDecorridos">0</strong> / <strong id="diasRestantes">384</strong></span>
+                        <span><strong id="percentualJornada">0</strong>% completo</span>
+                    </div>
+                    <div class="progress-bar-bg"><div class="progress-fill" id="progressoJornadaFill"></div></div>
+                </div>
+            </div>
+            <div class="card-section">
+                <h2>🔥 Dias mais movimentados</h2>
+                <div id="topDias"></div>
+            </div>
+        </aside>
+
+        <main class="desktop-center">
+            <div class="card-section">
+                <h2>🤝 Alcance Messiânico – Missões e Plantação de Congregações</h2>
+                <div class="aviso">Em breve, um espaço para conectar e fomentar a expansão do Reino.</div>
+                <div style="text-align: center; padding: 2rem 1rem;">
+                    <div style="font-size: 3rem;">🌍</div>
+                    <h3>Preparando o terreno para a colheita</h3>
+                    <p style="max-width: 500px; margin: 1rem auto;">Aqui você poderá:</p>
+                    <ul style="text-align: left; display: inline-block; margin-top: 0.5rem;">
+                        <li>📡 Conhecer projetos missionários apoiados pela comunidade</li>
+                        <li>🙌 Voluntariar‑se para ações de evangelismo e discipulado</li>
+                        <li>🕍 Compartilhar informações sobre congregações messiânicas locais</li>
+                        <li>💰 Apoiar financeiramente missionários de confiança (com transparência)</li>
+                        <li>📣 Divulgar eventos de alcance (cruzadas, estudos, resgates)</li>
+                    </ul>
+                    <div class="aviso" style="margin-top: 1rem;">🚀 Em breve, você poderá se envolver ativamente!</div>
+                </div>
+            </div>
+            <div class="card-section">
+                <h2>📖 Por que alcance messiânico?</h2>
+                <div class="aviso">Restaurar a esperança e anunciar Yeshua com poder.</div>
+                <p>O chamado para anunciar o Evangelho do Reino nunca cessou. Nossa visão é mobilizar recursos, oração e pessoas para alcançar Israel e as nações, respeitando as raízes judaicas e vivendo a plenitude da Nova Aliança.</p>
+            </div>
+        </main>
+
+        <aside class="desktop-right">
+            <div class="card-section">
+                <h2>📅 Calendário Coletivo</h2>
+                <div class="aviso">🔥 Clique nos dias que você jejuou e orou.</div>
+                <div id="calendarPreview"></div>
+                <div class="text-center mt-2">
+                    <a href="calendario.html" class="btn-small">Ver calendário completo →</a>
+                </div>
+            </div>
+            <div class="card-section">
+                <h2>🌐 Idioma</h2>
+                <div id="language-selector"></div>
+            </div>
+        </aside>
+    </div>
+
+    <footer>
+    <div id="footer-lang-placeholder"></div>
+        <p>🙏 Propósito de oração e jejum - 384 dias - Início: 16/05/2026</p>
+        <p><small>📚 Plano de estudo: FFOZ | Textos: Sefaria</small></p>
+    </footer>
+</div>
+
+<script type="module">
+    import { initAuth } from './js/auth.js';
+    import { carregarTodasEstatisticas } from './js/stats.js';
+    import { carregarCalendarPreview, setCalendarUser } from './js/calendar.js';
+    import { initTranslate } from './js/translate.js';
+    import { injectNavBar } from './js/nav.js';
+
+    injectNavBar();
+
+    let currentUser = null;
+    initAuth((user, nickname) => {
+        currentUser = user;
+        setCalendarUser(user);
+        const loginArea = document.getElementById('loginArea');
+        const userInfo = document.getElementById('userInfo');
+        const userNicknameSpan = document.getElementById('userNickname');
+        const userEmailSpan = document.getElementById('userEmail');
+        if (user) {
+            loginArea.style.display = 'none';
+            userInfo.style.display = 'block';
+            userNicknameSpan.textContent = nickname;
+            userEmailSpan.textContent = user.email;
+        } else {
+            loginArea.style.display = 'block';
+            userInfo.style.display = 'none';
+        }
+        carregarTodasEstatisticas();
+        carregarCalendarPreview('calendarPreview', user);
+    });
+
+    carregarTodasEstatisticas();
+    carregarCalendarPreview('calendarPreview', null);
+    initTranslate();
+</script>
+</body>
+</html>

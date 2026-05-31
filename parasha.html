@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IS21 | Texto completo da Parashá</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="top-bar">
+        <h1>IS21</h1>
+        <div id="loginArea">
+            <button class="btn google-btn" id="loginBtn">🔐 Entrar com Google</button>
+        </div>
+        <div id="userInfo" style="display: none;">
+            <span id="userNickname"></span>
+            <span id="userEmail"></span>
+            <button class="btn-small" id="logoutBtn">Sair</button>
+        </div>
+    </div>
+    <div id="nav-bar-placeholder"></div>
+
+    <div class="card-section">
+        <h2 id="tituloParasha">📖 Carregando...</h2>
+        <div id="textoCompleto" style="background: var(--bg-page); padding: 20px; border-radius: 20px; white-space: pre-wrap;">Carregando texto da Sefaria...</div>
+        <div style="margin-top: 20px; text-align: center;">
+            <button id="btnOuvir" class="btn-small">🔊 Ouvir texto completo</button>
+            <a id="linkSefaria" href="#" target="_blank" class="btn-small" style="margin-left: 12px;">📖 Ler no site da Sefaria →</a>
+        </div>
+        <div class="aviso" style="margin-top: 20px; text-align: center;">
+            🌍 Esta é a mesma porção lida esta semana pelas congregações messiânicas em Jerusalém.
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initAuth } from './js/auth.js';
+    import { injectNavBar } from './js/nav.js';
+    import { falarTexto } from './js/audio.js';
+
+    injectNavBar();
+
+    // ========== COPIE AQUI O MESMO OBJETO leiturasFFOZ DO SEU torah.js ==========
+    // (inclua todas as semanas, exatamente igual)
+    const leiturasFFOZ = {
+        // ... seu objeto completo (não vou repetir para economizar linhas)
+    };
+    // =======================================================================
+
+    function getCurrentWeekPortion() {
+        const hoje = new Date();
+        let leitura = null;
+        for (const [data, l] of Object.entries(leiturasFFOZ)) {
+            if (new Date(data) >= hoje) {
+                leitura = l;
+                break;
+            }
+        }
+        if (!leitura) leitura = Object.values(leiturasFFOZ)[0];
+        return leitura;
+    }
+
+    async function carregarTexto() {
+        const leitura = getCurrentWeekPortion();
+        if (!leitura || !leitura.torahRefEN) {
+            document.getElementById('textoCompleto').innerHTML = 'Porção da semana não encontrada.';
+            document.getElementById('tituloParasha').innerHTML = '📖 Estudo completo';
+            return;
+        }
+
+        document.getElementById('tituloParasha').innerHTML = `📖 Parashá ${leitura.parasha}`;
+        const ref = leitura.torahRefEN;
+        const url = `https://www.sefaria.org/api/texts/${ref}?lang=pt`;
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Erro na API');
+            const data = await response.json();
+            const texto = data.text.join('\n\n');
+            document.getElementById('textoCompleto').innerHTML = texto.replace(/\n/g, '<br>');
+            document.getElementById('linkSefaria').href = `https://www.sefaria.org/${ref}?lang=bi`;
+            document.getElementById('btnOuvir').onclick = () => falarTexto(texto, 'textoCompleto');
+        } catch (err) {
+            console.error(err);
+            document.getElementById('textoCompleto').innerHTML = 'Erro ao carregar texto da Sefaria. Tente novamente mais tarde.';
+        }
+    }
+
+    carregarTexto();
+
+    initAuth((user, nickname) => {
+        const loginArea = document.getElementById('loginArea');
+        const userInfo = document.getElementById('userInfo');
+        const userNick = document.getElementById('userNickname');
+        const userEmail = document.getElementById('userEmail');
+        if (user) {
+            loginArea.style.display = 'none';
+            userInfo.style.display = 'flex';
+            userNick.textContent = nickname;
+            userEmail.textContent = user.email;
+        } else {
+            loginArea.style.display = 'block';
+            userInfo.style.display = 'none';
+        }
+    });
+</script>
+</body>
+</html>

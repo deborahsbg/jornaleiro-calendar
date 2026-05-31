@@ -1,0 +1,150 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Jornaleiro | Doações com Transparência</title>
+    <link rel="stylesheet" href="css/style.css">
+    <div id="google_translate_element" style="display: none;"></div>
+</head>
+<body>
+<div class="container">
+    <!-- Top bar -->
+    <div class="top-bar">
+        <h1>📆 Calendário do Jornaleiro</h1>
+        <div id="loginArea">
+            <button class="btn google-btn" id="loginBtn">🔐 Entrar com Google</button>
+        </div>
+        <div id="userInfo" style="display: none;">
+            <span id="userNickname" style="font-weight: bold; color: #b45309;"></span>
+            <span id="userEmail" style="font-size: 0.7rem; color: #6c6f6b; margin-left: 8px;"></span>
+            <button class="btn-small" id="logoutBtn">Sair</button>
+        </div>
+    </div>
+    <div class="versiculo">"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</div>`n    <div id="nav-bar-placeholder"></div>
+
+    <!-- Three‑column grid -->
+    <div class="desktop-grid">
+        <!-- LEFT COLUMN (same as index) -->
+        <aside class="desktop-left">
+            <div class="card-section">
+                <h2>📊 Jornada do Jornaleiro</h2>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-number" id="totalParticipantes">0</div><div class="stat-label">Participantes</div></div>
+                    <div class="stat-card"><div class="stat-number" id="totalMarcacoes">0</div><div class="stat-label">Total de Marcações</div></div>
+                    <div class="stat-card"><div class="stat-number" id="mediaPorPessoa">0</div><div class="stat-label">Média por Pessoa</div></div>
+                    <div class="stat-card"><div class="stat-number" id="hojeMarcaram">0</div><div class="stat-label">Marcaram Hoje</div></div>
+                </div>
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>📅 Dias decorridos: <strong id="diasDecorridos">0</strong> / <strong id="diasRestantes">384</strong></span>
+                        <span><strong id="percentualJornada">0</strong>% completo</span>
+                    </div>
+                    <div class="progress-bar-bg"><div class="progress-fill" id="progressoJornadaFill"></div></div>
+                </div>
+            </div>
+            <div class="card-section">
+                <h2>🔥 Dias mais movimentados</h2>
+                <div id="topDias"></div>
+            </div>
+        </aside>
+
+        <!-- CENTER COLUMN – CONTEÚDO PRINCIPAL DE DOAÇÕES -->
+        <div class="desktop-grid">
+        <aside class="desktop-left"><!-- stats, top dias --></aside>
+        <main class="desktop-center">
+            <div class="card-section">
+                <h2>🇮🇱 Israel – A Terra, o Povo e a Profecia</h2>
+                <div class="aviso">Em breve, um espaço completo para entender a história, a geografia e o papel de Israel nos planos de Deus.</div>
+                <div style="text-align: center; padding: 2rem 1rem;">
+                    <div style="font-size: 3rem;">📜</div>
+                    <h3>Preparando conteúdos profundos</h3>
+                    <p style="max-width: 500px; margin: 1rem auto;">Você poderá aprender sobre:</p>
+                    <ul style="text-align: left; display: inline-block; margin-top: 0.5rem;">
+                        <li>🗺️ Mapas interativos (com comparação territorial)</li>
+                        <li>📖 História de Israel desde Abraão até os dias atuais</li>
+                        <li>🕯️ Análise profética (Ezequiel 38‑39, Zacarias 12, Romanos 11)</li>
+                        <li>📰 Notícias atualizadas do Oriente Médio (feeds confiáveis)</li>
+                        <li>🤝 Relatos de alcance messiânico em todo o mundo</li>
+                    </ul>
+                    <div class="aviso" style="margin-top: 1rem;">🔔 Em breve, você poderá acompanhar e compartilhar!</div>
+                </div>
+            </div>
+            <div class="card-section">
+                <h2>📢 Por que Israel é relevante para os messiânicos?</h2>
+                <div class="aviso">As raízes judaicas da fé e o chamado a abençoar Israel.</div>
+                <p>Preparamos artigos, vídeos e entrevistas para que você entenda a conexão entre a Aliança, o Messias Yeshua e o propósito divino para a nação de Israel e para as nações.</p>
+            </div>
+        </main>
+
+        <!-- RIGHT COLUMN (same as index) -->
+        <aside class="desktop-right">
+            <div class="card-section">
+                <h2>📅 Calendário Coletivo</h2>
+                <div class="aviso">🔥 Clique nos dias que você jejuou e orou.</div>
+                <div id="calendarPreview"></div>
+                <div class="text-center mt-2">
+                    <a href="calendario.html" class="btn-small">Ver calendário completo →</a>
+                </div>
+            </div>
+            <div class="card-section">
+                <h2>🌐 Idioma</h2>
+                <div class="aviso">Traduza o conteúdo (experimental)</div>
+                <div id="language-selector"></div>
+            </div>
+            <div class="card-section">
+                <h2>📢 Alcance Messiânico</h2>
+                <div class="aviso">Comunidades em todo o mundo.</div>
+                <ul style="list-style: none;">
+                    <li>🇧🇷 Brasil · 🇺🇸 EUA · 🇮🇱 Israel · 🇦🇷 Argentina · 🇪🇸 Espanha</li>
+                </ul>
+            </div>
+        </aside>
+    </div>
+
+    <footer>
+    <div id="footer-lang-placeholder"></div>
+        <p>🙏 Propósito de oração e jejum - 384 dias - Início: 16/05/2026</p>
+        <p><small>📚 Plano de estudo: FFOZ | Textos: Sefaria</small></p>
+    </footer>
+</div>
+
+<!-- Scripts modulares -->
+<script type="module">
+    import { injectNavBar } from './js/nav.js';
+    injectNavBar();
+
+    import { initAuth } from './js/auth.js';
+    import { carregarSalmoDia } from './js/salmos.js';
+    import { carregarTodasEstatisticas } from './js/stats.js';
+    import { carregarCalendarPreview, setCalendarUser } from './js/calendar.js';
+    import { initTranslate } from './js/translate.js';
+
+    let currentUser = null;
+
+    initAuth((user, nickname) => {
+        currentUser = user;
+        setCalendarUser(user);
+        const loginArea = document.getElementById('loginArea');
+        const userInfo = document.getElementById('userInfo');
+        const userNicknameSpan = document.getElementById('userNickname');
+        const userEmailSpan = document.getElementById('userEmail');
+        if (user) {
+            loginArea.style.display = 'none';
+            userInfo.style.display = 'block';
+            userNicknameSpan.textContent = nickname;
+            userEmailSpan.textContent = user.email;
+        } else {
+            loginArea.style.display = 'block';
+            userInfo.style.display = 'none';
+        }
+        carregarTodasEstatisticas();
+        carregarCalendarPreview('calendarPreview', user);
+    });
+
+    carregarTodasEstatisticas();
+    carregarCalendarPreview('calendarPreview', null);
+    initTranslate();
+</script>
+</body>
+</html>

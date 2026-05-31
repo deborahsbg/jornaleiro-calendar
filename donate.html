@@ -1,0 +1,186 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Jornaleiro | Doações com Transparência</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Web3Modal e WalletConnect (necessários para conectar carteira) -->
+    <script src="https://cdn.jsdelivr.net/npm/web3modal@1.9.8/dist/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
+
+    <!-- Google Translate -->
+    <div id="google_translate_element" style="display: none;"></div>
+</head>
+<body>
+<div class="container">
+    <!-- Top bar -->
+    <div class="top-bar">
+        <h1>📆 Calendário do Jornaleiro</h1>
+        <div id="loginArea">
+            <button class="btn google-btn" id="loginBtn">🔐 Entrar com Google</button>
+        </div>
+        <div id="userInfo" style="display: none;">
+            <span id="userNickname" style="font-weight: bold; color: #b45309;"></span>
+            <span id="userEmail" style="font-size: 0.7rem; color: #6c6f6b; margin-left: 8px;"></span>
+            <button class="btn-small" id="logoutBtn">Sair</button>
+        </div>
+    </div>
+    <div class="versiculo">"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</div>
+
+    <!-- Navegação (será injetada pelo nav.js) -->
+    <div id="nav-bar-placeholder"></div>
+
+    <!-- Three‑column grid -->
+    <div class="desktop-grid">
+        <!-- LEFT COLUMN -->
+        <aside class="desktop-left">
+            <div class="card-section">
+                <h2>📊 Jornada do Jornaleiro</h2>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-number" id="totalParticipantes">0</div><div class="stat-label">Participantes</div></div>
+                    <div class="stat-card"><div class="stat-number" id="totalMarcacoes">0</div><div class="stat-label">Total de Marcações</div></div>
+                    <div class="stat-card"><div class="stat-number" id="mediaPorPessoa">0</div><div class="stat-label">Média por Pessoa</div></div>
+                    <div class="stat-card"><div class="stat-number" id="hojeMarcaram">0</div><div class="stat-label">Marcaram Hoje</div></div>
+                </div>
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>📅 Dias decorridos: <strong id="diasDecorridos">0</strong> / <strong id="diasRestantes">384</strong></span>
+                        <span><strong id="percentualJornada">0</strong>% completo</span>
+                    </div>
+                    <div class="progress-bar-bg"><div class="progress-fill" id="progressoJornadaFill"></div></div>
+                </div>
+            </div>
+            <div class="card-section">
+                <h2>🔥 Dias mais movimentados</h2>
+                <div id="topDias"></div>
+            </div>
+        </aside>
+
+        <!-- CENTER COLUMN – DOAÇÕES -->
+        <main class="desktop-center">
+            <div class="card-section">
+                <h2>💝 Apoiar o IS21</h2>
+                <div class="aviso">🌍 Três maneiras de contribuir – todas com transparência e impacto real.</div>
+
+                <!-- PIX -->
+                <div style="background: #e6f0fa; border-radius: 20px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <h3>🇧🇷 Pix (Brasil)</h3>
+                    <p>Chave: <strong>is21@jornaleiro.org</strong></p>
+                    <button id="copyPixBtn" class="btn-small">Copiar chave Pix</button>
+                    <div class="aviso">✅ Doações via Pix são registradas e publicadas no relatório anual.</div>
+                </div>
+
+                <!-- USDC (global) -->
+                <div style="background: #e6f0fa; border-radius: 20px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <h3>💵 USDC (rede Ethereum / Polygon) – recomendado</h3>
+                    <p>Endereço da carteira comunitária: <strong>0x1234...abcd</strong> (coloque o endereço real)</p>
+                    <button id="connectWalletBtn" class="btn">🔗 Conectar carteira e doar USDC</button>
+                    <div class="aviso">✅ Transparente, rastreável na blockchain, ideal para quem quer governança.</div>
+                </div>
+
+                <!-- BRZ (opcional) -->
+                <div style="background: #e6f0fa; border-radius: 20px; padding: 1rem;">
+                    <h3>🇧🇷 BRZ (Real digital – Transfero)</h3>
+                    <p>Endereço para BRZ: <strong>0x5678...efgh</strong></p>
+                    <button id="connectWalletBRZBtn" class="btn-small">Conectar e doar BRZ</button>
+                </div>
+
+                <div class="aviso" style="margin-top: 1rem;">
+                    📅 <strong>Prestação de contas anual</strong> – Todo mês de janeiro publicamos um relatório completo (entradas, saídas, projetos apoiados). Acesso público e verificação independente possível via blockchain para doações cripto.
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT COLUMN -->
+        <aside class="desktop-right">
+            <div class="card-section">
+                <h2>📅 Calendário Coletivo</h2>
+                <div class="aviso">🔥 Clique nos dias que você jejuou e orou.</div>
+                <div id="calendarPreview"></div>
+                <div class="text-center mt-2">
+                    <a href="calendario.html" class="btn-small">Ver calendário completo →</a>
+                </div>
+            </div>
+            <div class="card-section">
+                <h2>🌐 Idioma</h2>
+                <div class="aviso">Traduza o conteúdo (experimental)</div>
+                <div id="language-selector"></div>
+            </div>
+            <div class="card-section">
+                <h2>📢 Alcance Messiânico</h2>
+                <div class="aviso">Comunidades em todo o mundo.</div>
+                <ul style="list-style: none;">
+                    <li>🇧🇷 Brasil · 🇺🇸 EUA · 🇮🇱 Israel · 🇦🇷 Argentina · 🇪🇸 Espanha</li>
+                </ul>
+            </div>
+        </aside>
+    </div>
+
+    <footer>
+    <div id="footer-lang-placeholder"></div>
+        <p>🙏 Propósito de oração e jejum - 384 dias - Início: 16/05/2026</p>
+        <p><small>📚 Plano de estudo: FFOZ | Textos: Sefaria</small></p>
+    </footer>
+</div>
+
+<script type="module">
+    import { initAuth } from './js/auth.js';
+    import { carregarTodasEstatisticas } from './js/stats.js';
+    import { carregarCalendarPreview, setCalendarUser } from './js/calendar.js';
+    import { initTranslate } from './js/translate.js';
+    import { injectNavBar } from './js/nav.js';
+    import { conectarCarteira } from './js/wallet.js';
+
+    // Injetar menu de navegação
+    injectNavBar();
+
+    let currentUser = null;
+
+    initAuth((user, nickname) => {
+        currentUser = user;
+        setCalendarUser(user);
+        const loginArea = document.getElementById('loginArea');
+        const userInfo = document.getElementById('userInfo');
+        const userNicknameSpan = document.getElementById('userNickname');
+        const userEmailSpan = document.getElementById('userEmail');
+        if (user) {
+            loginArea.style.display = 'none';
+            userInfo.style.display = 'block';
+            userNicknameSpan.textContent = nickname;
+            userEmailSpan.textContent = user.email;
+        } else {
+            loginArea.style.display = 'block';
+            userInfo.style.display = 'none';
+        }
+        carregarTodasEstatisticas();
+        carregarCalendarPreview('calendarPreview', user);
+    });
+
+    carregarTodasEstatisticas();
+    carregarCalendarPreview('calendarPreview', null);
+    initTranslate();
+
+    // Botões de doação
+    document.getElementById('copyPixBtn')?.addEventListener('click', () => {
+        navigator.clipboard.writeText('is21@jornaleiro.org');
+        alert('Chave Pix copiada!');
+    });
+
+    document.getElementById('connectWalletBtn')?.addEventListener('click', async () => {
+        const address = await conectarCarteira();
+        if (address) {
+            alert(`Carteira conectada: ${address}\n\nEnvie USDC (rede Ethereum ou Polygon) para o endereço comunitário:\n0x1234...abcd\n\nO valor chegará automaticamente ao tesouro do IS21.`);
+        }
+    });
+
+    document.getElementById('connectWalletBRZBtn')?.addEventListener('click', async () => {
+        const address = await conectarCarteira();
+        if (address) {
+            alert(`Carteira conectada: ${address}\n\nEnvie BRZ (rede Ethereum) para o endereço comunitário:\n0x5678...efgh`);
+        }
+    });
+</script>
+</body>
+</html>

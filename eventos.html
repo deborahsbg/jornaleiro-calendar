@@ -1,0 +1,123 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Jornaleiro | Eventos Comunitários</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Leaflet CSS + JS para mapas -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <div id="google_translate_element" style="display: none;"></div>
+</head>
+<body>
+<div class="container">
+    <div class="top-bar">
+        <h1>📆 Calendário do Jornaleiro</h1>
+        <div id="loginArea">
+            <button class="btn google-btn" id="loginBtn">🔐 Entrar com Google</button>
+        </div>
+        <div id="userInfo" style="display: none;">
+            <span id="userNickname" style="font-weight: bold; color: #b45309;"></span>
+            <span id="userEmail" style="font-size: 0.7rem; color: #6c6f6b; margin-left: 8px;"></span>
+            <button class="btn-small" id="logoutBtn">Sair</button>
+        </div>
+    </div>
+    <div class="versiculo">"Dentro de um ano, conforme os anos de um jornaleiro..."<br>Isaías 21:16-17</div>
+    <div id="nav-bar-placeholder"></div>
+
+    <!-- Barra de navegação secundária -->
+    <div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <a href="index.html" class="btn-small">🏠 Início</a>
+        <a href="eventos.html" class="btn-small" style="background: #b45309;">📅 Eventos</a>
+        <a href="calendario.html" class="btn-small">📆 Calendário Coletivo</a>
+        <a href="doacoes.html" class="btn-small">💝 Doações</a>
+        <a href="israel.html" class="btn-small">🇮🇱 Israel</a>
+        <a href="aprender.html" class="btn-small">📚 Aprender</a>
+    </div>
+
+    <div class="desktop-grid">
+        <!-- LEFT COLUMN: estatísticas, preview calendário -->
+        <aside class="desktop-left">
+            <div class="card-section">
+                <h2>📊 Jornada do Jornaleiro</h2>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-number" id="totalParticipantes">0</div><div class="stat-label">Participantes</div></div>
+                    <div class="stat-card"><div class="stat-number" id="totalMarcacoes">0</div><div class="stat-label">Total de Marcações</div></div>
+                    <div class="stat-card"><div class="stat-number" id="mediaPorPessoa">0</div><div class="stat-label">Média por Pessoa</div></div>
+                    <div class="stat-card"><div class="stat-number" id="hojeMarcaram">0</div><div class="stat-label">Marcaram Hoje</div></div>
+                </div>
+                <div class="progress-bar-bg"><div class="progress-fill" id="progressoJornadaFill"></div></div>
+            </div>
+            <div class="card-section">
+                <h2>🔥 Dias mais movimentados</h2>
+                <div id="topDias"></div>
+            </div>
+        </aside>
+
+        <!-- CENTER COLUMN: LISTA DE EVENTOS + FORMULÁRIO DE CRIAÇÃO -->
+        <main class="desktop-center">
+            <!-- Botão para criar evento (só aparece logado) -->
+            <div id="criarEventoBtnContainer" style="text-align: right; margin-bottom: 1rem; display: none;">
+                <button id="showCreateEventFormBtn" class="btn">➕ Criar novo evento</button>
+            </div>
+
+            <!-- Formulário de criação (oculto inicialmente) -->
+            <div id="createEventForm" class="card-section" style="display: none;">
+                <h2>➕ Novo Evento</h2>
+                <div class="aviso">Preencha os dados. Só membros logados podem criar eventos.</div>
+                <form id="eventForm">
+                    <input type="text" id="eventTitulo" placeholder="Título do evento *" required>
+                    <textarea id="eventDescricao" rows="2" placeholder="Descrição (opcional)"></textarea>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <input type="datetime-local" id="eventDataInicio" required style="flex:1">
+                        <input type="datetime-local" id="eventDataFim" style="flex:1">
+                    </div>
+                    <select id="eventTipo" required>
+                        <option value="presencial">Presencial</option>
+                        <option value="online">Online</option>
+                    </select>
+                    <input type="text" id="eventLocal" placeholder="Local (ex: Shopping X, sala 3)">
+                    <input type="text" id="eventLink" placeholder="Link de participação (WhatsApp, Meet, YouTube, etc.)">
+                    <input type="number" id="eventMax" placeholder="Máximo de participantes (opcional)">
+                    <div style="margin: 0.5rem 0;">
+                        <label>
+                            <input type="checkbox" id="eventMostrarMapa"> Mostrar minha localização aproximada no mapa
+                        </label>
+                    </div>
+                    <div id="mapContainer" style="height: 200px; display: none; margin-bottom: 1rem;"></div>
+                    <button type="submit" class="btn">📢 Criar evento</button>
+                    <button type="button" id="cancelCreateEvent" class="btn-small">Cancelar</button>
+                </form>
+            </div>
+
+            <!-- Lista de eventos -->
+            <div id="listaEventos" class="card-section">
+                <h2>📅 Próximos eventos</h2>
+                <div id="eventosList"></div>
+            </div>
+        </main>
+
+        <!-- RIGHT COLUMN: dicas, idioma, etc. -->
+        <aside class="desktop-right">
+            <div class="card-section">
+                <h2>🌐 Idioma</h2>
+                <div id="language-selector"></div>
+            </div>
+            <div class="card-section">
+                <h2>💡 Dicas</h2>
+                <div class="aviso">Crie eventos para encontrar companhia, orar juntos ou divulgar lives que edifiquem a comunidade.</div>
+            </div>
+        </aside>
+    </div>
+
+    <footer>
+    <div id="footer-lang-placeholder"></div>
+        <p>🙏 Propósito de oração e jejum - 384 dias - Início: 16/05/2026</p>
+        <p><small>📚 Plano de estudo: FFOZ | Textos: Sefaria</small></p>
+    </footer>
+</div>
+
+<script type="module" src="js/eventos.js"></script>
+</body>
+</html>

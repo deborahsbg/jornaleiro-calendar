@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /assets/private/
+Disallow: /js/config-private.js
+
+Sitemap: https://deborahsbg.github.io/jornaleiro-calendar/sitemap.xml
